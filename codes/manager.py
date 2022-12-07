@@ -202,15 +202,22 @@ class Manager:
             # Save checkpoints
             if epoch_idx % cfg.TRAIN.SAVE_FREQ == 0 or cd_eval < self.best_metrics:
                 self.best_epoch = epoch_idx
-                file_name = 'ckpt-best.pth' if cd_eval < self.best_metrics else 'ckpt-epoch-%03d.pth' % epoch_idx
-                output_path = os.path.join(cfg.DIR.CHECKPOINTS, file_name)
-                torch.save({
-                    'epoch_index': epoch_idx,
-                    'best_metrics': cd_eval,
-                    'model': model.state_dict()
-                }, output_path)
 
-                print('Saved checkpoint to %s ...' % output_path)
+                file_names = []
+                if epoch_idx % cfg.TRAIN.SAVE_FREQ == 0:
+                    file_names.append('ckpt-epoch-%03d.pth' % epoch_idx)
+                if cd_eval < self.best_metrics:
+                    file_names.append('ckpt-best.pth')
+
+                for file_name in file_names:
+                    output_path = os.path.join(cfg.DIR.CHECKPOINTS, file_name)
+                    torch.save({
+                        'epoch_index': epoch_idx,
+                        'best_metrics': cd_eval,
+                        'model': model.state_dict()
+                    }, output_path)
+
+                    print('Saved checkpoint to %s ...' % output_path)
                 if cd_eval < self.best_metrics:
                     self.best_metrics = cd_eval
 
