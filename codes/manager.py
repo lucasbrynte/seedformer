@@ -200,7 +200,7 @@ class Manager:
             self.train_record('Testing scores = {:.4f}'.format(cd_eval))
 
             # Save checkpoints
-            if cd_eval < self.best_metrics:
+            if epoch_idx % cfg.TRAIN.SAVE_FREQ == 0 or cd_eval < self.best_metrics:
                 self.best_epoch = epoch_idx
                 file_name = 'ckpt-best.pth' if cd_eval < self.best_metrics else 'ckpt-epoch-%03d.pth' % epoch_idx
                 output_path = os.path.join(cfg.DIR.CHECKPOINTS, file_name)
