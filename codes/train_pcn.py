@@ -66,8 +66,10 @@ def PCNConfig():
     __C.DATASETS.SHAPENET.CATEGORY_FILE_PATH         = './datasets/ShapeNet.json'
     __C.DATASETS.SHAPENET.N_RENDERINGS               = 8
     __C.DATASETS.SHAPENET.N_POINTS                   = 2048
-    __C.DATASETS.SHAPENET.PARTIAL_POINTS_PATH        = '<*PATH-TO-YOUR-DATASET*>/PCN/%s/partial/%s/%s/%02d.pcd'
-    __C.DATASETS.SHAPENET.COMPLETE_POINTS_PATH       = '<*PATH-TO-YOUR-DATASET*>/PCN/%s/complete/%s/%s.pcd'
+    __C.DATASETS.SHAPENET.PARTIAL_POINTS_PATH        = '/data/PCN/%s/partial/%s/%s/%02d.pcd'
+    __C.DATASETS.SHAPENET.COMPLETE_POINTS_PATH       = '/data/PCN/%s/complete/%s/%s.pcd'
+    # __C.DATASETS.SHAPENET.PARTIAL_POINTS_PATH        = '<*PATH-TO-YOUR-DATASET*>/PCN/%s/partial/%s/%s/%02d.pcd'
+    # __C.DATASETS.SHAPENET.COMPLETE_POINTS_PATH       = '<*PATH-TO-YOUR-DATASET*>/PCN/%s/complete/%s/%s.pcd'
 
     #
     # Dataset
