@@ -152,6 +152,9 @@ def sample_and_group(xyz, points, npoint, nsample, radius, use_xyz=True):
         else:
             new_points = grouped_points
     else:
+        # Previously, if no point features "points" were provided, the xyz values were implied as features themselves.
+        # Now, instead require use_xyz = True in order to use the xyz coordinates as features.
+        assert use_xyz, 'use_xyz = False and no point features provided. To use the xyz coordinates as features, set use_xyz = True.'
         new_points = grouped_xyz
 
     return new_xyz, new_points, idx, grouped_xyz
@@ -184,6 +187,9 @@ def sample_and_group_all(xyz, points, use_xyz=True):
             new_points = points
         new_points = new_points.unsqueeze(2)
     else:
+        # Previously, if no point features "points" were provided, the xyz values were implied as features themselves.
+        # Now, instead require use_xyz = True in order to use the xyz coordinates as features.
+        assert use_xyz, 'use_xyz = False and no point features provided. To use the xyz coordinates as features, set use_xyz = True.'
         new_points = grouped_xyz
 
     return new_xyz, new_points, idx, grouped_xyz
@@ -376,6 +382,9 @@ def sample_and_group_knn(xyz, points, npoint, k, use_xyz=True, idx=None):
         else:
             new_points = grouped_points
     else:
+        # Previously, if no point features "points" were provided, the xyz values were implied as features themselves.
+        # Now, instead require use_xyz = True in order to use the xyz coordinates as features.
+        assert use_xyz, 'use_xyz = False and no point features provided. To use the xyz coordinates as features, set use_xyz = True.'
         new_points = grouped_xyz
 
     return new_xyz, new_points, idx, grouped_xyz
