@@ -92,7 +92,12 @@ class Dataset(torch.utils.data.dataset.Dataset):
         for ri in self.options['required_items']:
             file_path = sample['%s_path' % ri]
             if type(file_path) == list:
+                # A list of renderings is always accepted, even if n_renderings == 1
+                assert len(file_path) == self.options['n_renderings']
                 file_path = file_path[rand_idx]
+            else:
+                # The only case for which we don't expect a list
+                assert self.options['n_renderings'] == 1
             # print(file_path)
             data[ri] = IO.get(file_path).astype(np.float32)
 
@@ -177,35 +182,22 @@ class ShapeNetDataLoader(object):
 
             for s in tqdm(samples, leave=False):
 
-                if subset == 'test':
-
-                    gt_path = cfg.DATASETS.SHAPENET.COMPLETE_POINTS_PATH % (
-                        subset, dc['taxonomy_id'], s)
-                    file_list.append({
-                        'taxonomy_id':
-                        dc['taxonomy_id'],
-                        'model_id':
-                        s,
-                        'partial_cloud_path':
-                        gt_path.replace('complete', 'partial'),
-                        'gtcloud_path':
-                        gt_path
-                    })
-                else:
-                    file_list.append({
-                        'taxonomy_id':
-                        dc['taxonomy_id'],
-                        'model_id':
-                        s,
-                        'partial_cloud_path': [
-                            cfg.DATASETS.SHAPENET.PARTIAL_POINTS_PATH %
-                            (subset, dc['taxonomy_id'], s, i)
-                            for i in range(n_renderings)
-                        ],
-                        'gtcloud_path':
-                        cfg.DATASETS.SHAPENET.COMPLETE_POINTS_PATH %
-                        (subset, dc['taxonomy_id'], s),
-                    })
+                # Previously, 'test' has been considered a special case with a slightly different directory structure. The directory structure of the test data does however now appear identical to train / val.
+                file_list.append({
+                    'taxonomy_id':
+                    dc['taxonomy_id'],
+                    'model_id':
+                    s,
+                    # NOTE: All partial renderings are added to a single sample, but when accessing a dataset element, only one rendering will be (randomly) sampled:
+                    'partial_cloud_path': [
+                        cfg.DATASETS.SHAPENET.PARTIAL_POINTS_PATH %
+                        (subset, dc['taxonomy_id'], s, i)
+                        for i in range(n_renderings)
+                    ],
+                    'gtcloud_path':
+                    cfg.DATASETS.SHAPENET.COMPLETE_POINTS_PATH %
+                    (subset, dc['taxonomy_id'], s),
+                })
 
         logging.info(
             'Complete collecting files of the dataset. Total files: %d' %
