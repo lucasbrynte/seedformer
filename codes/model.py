@@ -271,7 +271,8 @@ class SeedFormer(nn.Module):
 
         # Seed Generator
         self.feat_extractor = FeatureExtractor(out_dim=feat_dim, n_knn=n_knn)
-        self.seed_generator = SeedGenerator(feat_dim=feat_dim, seed_dim=embed_dim, n_knn=n_knn, factor=seed_factor, attn_channel=attn_channel)
+        # SeedGenerator has only one UpTransformer layer. Let's apply attn_channel unless specified as 'none':
+        self.seed_generator = SeedGenerator(feat_dim=feat_dim, seed_dim=embed_dim, n_knn=n_knn, factor=seed_factor, attn_channel=attn_channel in ['1', '2', 'both'])
 
         # Upsample layers
         up_layers = []
