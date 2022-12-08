@@ -92,10 +92,11 @@ class Dataset(torch.utils.data.dataset.Dataset):
         for ri in self.options['required_items']:
             file_path = sample['%s_path' % ri]
             if type(file_path) == list:
+                assert ri == 'partial_cloud'
                 # A list of renderings is always accepted, even if n_renderings == 1
                 assert len(file_path) == self.options['n_renderings']
                 file_path = file_path[rand_idx]
-            else:
+            elif ri == 'partial_cloud':
                 # The only case for which we don't expect a list
                 assert self.options['n_renderings'] == 1
             # print(file_path)
