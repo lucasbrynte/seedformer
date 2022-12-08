@@ -145,6 +145,7 @@ def train_net(cfg):
                                                     pin_memory=True,
                                                     shuffle=True,
                                                     drop_last=False)
+    # NOTE: ShapeNet-55 does not have a separate validation set. TEST is used for validation.
     val_data_loader = torch.utils.data.DataLoader(dataset=val_dataset_loader.get_dataset(
         utils.data_loaders.DatasetSubset.TEST),
                                                   batch_size=cfg.TRAIN.BATCH_SIZE,
