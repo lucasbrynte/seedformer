@@ -180,8 +180,9 @@ class UpLayer(nn.Module):
     """
     Upsample Layer with upsample transformers
     """
-    def __init__(self, dim, seed_dim, up_factor=2, i=0, radius=1, n_knn=20, interpolate='three', attn_channel=True):
+    def __init__(self, dim, seed_dim, up_factor=2, i=0, radius=1, n_knn=20, interpolate='three', attn_channel='2'):
         super(UpLayer, self).__init__()
+        assert attn_channel in ['1', '2', 'both', 'none']
         self.i = i
         self.up_factor = up_factor
         self.radius = radius
@@ -191,8 +192,8 @@ class UpLayer(nn.Module):
         self.mlp_1 = MLP_CONV(in_channel=3, layer_dims=[64, 128])
         self.mlp_2 = MLP_CONV(in_channel=128 * 2 + seed_dim, layer_dims=[256, dim])
 
-        self.uptrans1 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, up_factor=None)
-        self.uptrans2 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel, up_factor=self.up_factor)
+        self.uptrans1 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel in ['1', 'both'], up_factor=None)
+        self.uptrans2 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel in ['2', 'both'], up_factor=self.up_factor)
 
         self.upsample = nn.Upsample(scale_factor=up_factor)
         self.mlp_delta_feature = MLP_Res(in_dim=dim*2, hidden_dim=dim, out_dim=dim)
@@ -253,7 +254,7 @@ class SeedFormer(nn.Module):
     """
     SeedFormer Point Cloud Completion with Patch Seeds and Upsample Transformer
     """
-    def __init__(self, feat_dim=512, embed_dim=128, num_p0=512, n_knn=20, radius=1, up_factors=None, seed_factor=2, interpolate='three', attn_channel=True):
+    def __init__(self, feat_dim=512, embed_dim=128, num_p0=512, n_knn=20, radius=1, up_factors=None, seed_factor=2, interpolate='three', attn_channel='2'):
         """
         Args:
             feat_dim: dimension of global feature
@@ -265,6 +266,7 @@ class SeedFormer(nn.Module):
             attn_channel: transformer self-attention dimension (channel/point)
         """
         super(SeedFormer, self).__init__()
+        assert attn_channel in ['1', '2', 'both', 'none']
         self.num_p0 = num_p0
 
         # Seed Generator
