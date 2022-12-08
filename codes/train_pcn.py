@@ -43,7 +43,7 @@ parser.add_argument('--inference', dest='inference', help='Inference for benchma
 parser.add_argument('--output', type=int, default=False, help='Output testing results.')
 parser.add_argument('--pretrained', type=str, default='', help='Pretrained path for testing.')
 parser.add_argument('--batch-size', type=int, dest='batch_size', help='', default=None)
-parser.add_argument('--attn-channel', type=str, dest='attn_channel', help="'1', '2', or 'both', 'none'")
+parser.add_argument('--attn-channel', type=str, dest='attn_channel', help="'1', '2', or 'both', 'none'", default='2')
 parser.add_argument('--avoid-seed-pos-features', dest='avoid_seed_pos_features', help='', action='store_true')
 args = parser.parse_args()
 
@@ -307,7 +307,7 @@ if __name__ == '__main__':
 
     if args.batch_size is not None:
         cfg.TRAIN.BATCH_SIZE = args.batch_size
-    assert args.ATTN_CHANNEL in ['1', '2', 'both', 'none']
+    assert args.attn_channel in ['1', '2', 'both', 'none']
     cfg.NETWORK.ATTN_CHANNEL = args.attn_channel
     cfg.NETWORK.AVOID_SEED_POS_FEATURES = args.avoid_seed_pos_features
 
