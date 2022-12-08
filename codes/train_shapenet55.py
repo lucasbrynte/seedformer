@@ -42,6 +42,7 @@ parser.add_argument('--test', dest='test', help='Test neural networks', action='
 parser.add_argument('--inference', dest='inference', help='Inference for benchmark', action='store_true')
 parser.add_argument('--output', type=int, default=False, help='Output testing results.')
 parser.add_argument('--pretrained', type=str, default='', help='Pretrained path for testing.')
+parser.add_argument('--batch-size', type=int, dest='batch_size', help='', default=None)
 parser.add_argument('--mode', type=str, default='median', help='Testing mode [easy, median, hard].')
 args = parser.parse_args()
 
@@ -264,6 +265,9 @@ if __name__ == '__main__':
 
     # Init config
     cfg = ShapeNet55Config()
+
+    if args.batch_size is not None:
+        cfg.TRAIN.BATCH_SIZE = args.batch_size
 
     # setting
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
