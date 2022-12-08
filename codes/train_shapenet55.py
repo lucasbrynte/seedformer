@@ -68,7 +68,7 @@ def ShapeNet55Config():
     # Dataset
     #
     __C.DATASET                                      = edict()
-    # Dataset Options: Completion3D, ShapeNet, ShapeNetCars, Completion3DPCCT
+    # Dataset Options: Completion3D, ShapeNet (=PCN), ShapeNet55, ShapeNetCars, Completion3DPCCT
     __C.DATASET.TRAIN_DATASET                        = 'ShapeNet55'
     __C.DATASET.TEST_DATASET                         = 'ShapeNet55'
 
@@ -86,7 +86,8 @@ def ShapeNet55Config():
 
     __C.DIR                                          = edict()
     __C.DIR.OUT_PATH                                 = '../results'
-    __C.DIR.TEST_PATH                                = '../test'
+    # __C.DIR.TEST_PATH                                = '../test'
+    __C.DIR.TEST_PATH                                = '../results/test'
     __C.CONST.DEVICE                                 = '0, 1'
     # __C.CONST.WEIGHTS                                = None # 'ckpt-best.pth'  # specify a path to run test and inference
 
