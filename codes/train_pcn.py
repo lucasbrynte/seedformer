@@ -153,7 +153,7 @@ def train_net(cfg):
         raise NotImplementedError
 
     # Set up folders for logs and checkpoints
-    timestr = time.strftime('_Log_%Y_%m_%d_%H_%M_%S', time.gmtime())
+    timestr = time.strftime('_Log_%Y_%m_%d_%H_%M_%S', time.localtime())
     cfg.DIR.OUT_PATH = os.path.join(cfg.DIR.OUT_PATH, TRAIN_NAME+timestr)
     cfg.DIR.CHECKPOINTS = os.path.join(cfg.DIR.OUT_PATH, 'checkpoints')
     cfg.DIR.LOGS = cfg.DIR.OUT_PATH
