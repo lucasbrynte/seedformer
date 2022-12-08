@@ -23,7 +23,7 @@ Date: 2022-5-31
 import os
 import numpy as np
 import torch
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import SequentialLR, LinearLR, StepLR
 import time
 
 import utils.data_loaders
@@ -72,9 +72,33 @@ class Manager:
                                            betas=cfg.TRAIN.BETAS)
 
         # lr scheduler
+        # NOTE: In general, before PyTorch 1.13, the following issue requires the first scheduler to be the last one initialized:
+        # https://github.com/pytorch/pytorch/issues/72874
+        # PR merged for PT 1.13:
+        # https://github.com/pytorch/pytorch/pull/72856
+        # For LinearLR & StepLR, order does not seem to matter, at least not in the current scheme.
         self.scheduler_steplr = StepLR(self.optimizer, step_size=1, gamma=0.1 ** (1 / cfg.TRAIN.LR_DECAY))
-        self.lr_scheduler = GradualWarmupScheduler(self.optimizer, multiplier=1, total_epoch=cfg.TRAIN.WARMUP_EPOCHS,
-                                              after_scheduler=self.scheduler_steplr)
+
+        # OLD:
+        # # NOTE: multiplier=1 implies special case of ramping up from 0 to base_lr.
+        # self.lr_scheduler = GradualWarmupScheduler(self.optimizer, multiplier=1, total_epoch=cfg.TRAIN.WARMUP_EPOCHS,
+        #                                       after_scheduler=self.scheduler_steplr)
+
+        # NEW: (Now also avoid initial manual self.lr_scheduler.step() call)
+        cfg.TRAIN.WARMUP_EPOCHS -= 1 # There is no longer any redundant epoch due to the double initial LR scheduler step (once by pytorch, once by user).
+        self.scheduler_warmup = LinearLR(
+            self.optimizer,
+            start_factor = 1.0 / (cfg.TRAIN.WARMUP_EPOCHS+1),
+            # NOTE! Important to not use any other end_factor than 1.0, without making sure we obtain expected behavior.
+            # SequentialLR doesn't seem to guarantee "LR stitching", but instead, each scheduler resets at the same "base_lr".
+            end_factor = 1.0,
+            total_iters = cfg.TRAIN.WARMUP_EPOCHS,
+        )
+        self.lr_scheduler = SequentialLR(
+            self.optimizer,
+            schedulers = [self.scheduler_warmup, self.scheduler_steplr],
+            milestones = [cfg.TRAIN.WARMUP_EPOCHS],
+        )
 
         # record file
         self.train_record_file = open(os.path.join(cfg.DIR.LOGS, 'training.txt'), 'w')
@@ -127,6 +151,13 @@ class Manager:
         print('Testing Record:')
         self.test_record('#epoch cdc cd1 cd2 partial_matching | cd3 | #best_epoch best_metrics')
 
+        # # OLD:
+        # # this zero gradient update is needed to avoid a warning message, issue #8.
+        # # https://github.com/ildoonet/pytorch-gradual-warmup-lr/issues/8
+        # # In all likelihood, it does not have any practical consequence.
+        # self.optimizer.zero_grad()
+        # self.optimizer.step()
+
         # Training Start
         for epoch_idx in range(init_epoch + 1, cfg.TRAIN.N_EPOCHS + 1):
 
@@ -137,8 +168,13 @@ class Manager:
 
             model.train()
 
-            # Update learning rate
-            self.lr_scheduler.step()
+            # # OLD:
+            # # Update learning rate
+            # # Intentionally done before the first optimizer step (and implied lr_scheduler.get_lr() call).
+            # # The author of the LR scheduler probably didn't realize that the .step() method of any LR scheduler is always called once by the constructor's call to ._initial_step().
+            # # Consequently, in practice .step() is indeed called BEFORE every epoch, although the initial call is not meant to be manually carried out.
+            # # A simple replacement of self.last_epoch by (self.last_epoch + 1) in all or parts of the code would likely result in the expected behavior, even when refraining from calling .step() before any optimizer.step().
+            # self.lr_scheduler.step()
 
             # total cds
             total_cd_pc = 0
@@ -180,6 +216,11 @@ class Manager:
                 # training record
                 message = '{:d} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}'.format(n_itr, cd_pc_item, cd_p1_item, cd_p2_item, cd_p3_item, partial_item)
                 self.train_record(message, show_info=False)
+
+            # NEW:
+            # Update learning rate
+            # NOTE: At the scheduler switch, SequentialLR.step() calls scheduler.step(0), triggering an EPOCH_DEPRECATION_WARNING. Confusing but harmless.
+            self.lr_scheduler.step()
 
             # avg cds
             avg_cdc = total_cd_pc / n_batches
