@@ -43,6 +43,7 @@ parser.add_argument('--inference', dest='inference', help='Inference for benchma
 parser.add_argument('--output', type=int, default=False, help='Output testing results.')
 parser.add_argument('--pretrained', type=str, default='', help='Pretrained path for testing.')
 parser.add_argument('--batch-size', type=int, dest='batch_size', help='', default=None)
+parser.add_argument('--attn-channel', type=str, dest='attn_channel', help="'1', '2', 'both', or 'none'", default='2')
 parser.add_argument('--mode', type=str, default='median', help='Testing mode [easy, median, hard].')
 args = parser.parse_args()
 
@@ -168,7 +169,7 @@ def train_net(cfg):
     #######################
 
     Model = import_module(args.net_model)
-    model = Model.__dict__[args.arch_model](up_factors=cfg.NETWORK.UPSAMPLE_FACTORS)
+    model = Model.__dict__[args.arch_model](attn_channel=cfg.NETWORK.ATTN_CHANNEL, up_factors=cfg.NETWORK.UPSAMPLE_FACTORS)
     #print(model)
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
@@ -229,7 +230,7 @@ def test_net(cfg):
     #######################
 
     Model = import_module(args.net_model)
-    model = Model.__dict__[args.arch_model](up_factors=cfg.NETWORK.UPSAMPLE_FACTORS)
+    model = Model.__dict__[args.arch_model](attn_channel=cfg.NETWORK.ATTN_CHANNEL, up_factors=cfg.NETWORK.UPSAMPLE_FACTORS)
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
 
@@ -268,6 +269,8 @@ if __name__ == '__main__':
 
     if args.batch_size is not None:
         cfg.TRAIN.BATCH_SIZE = args.batch_size
+    assert args.attn_channel in ['1', '2', 'both', 'none']
+    cfg.NETWORK.ATTN_CHANNEL = args.attn_channel
 
     # setting
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
