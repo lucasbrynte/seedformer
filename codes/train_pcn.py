@@ -42,6 +42,7 @@ parser.add_argument('--test', dest='test', help='Test neural networks', action='
 parser.add_argument('--inference', dest='inference', help='Inference for benchmark', action='store_true')
 parser.add_argument('--output', type=int, default=False, help='Output testing results.')
 parser.add_argument('--pretrained', type=str, default='', help='Pretrained path for testing.')
+parser.add_argument('--lr', type=float, dest='lr', help='', default=None)
 parser.add_argument('--batch-size', type=int, dest='batch_size', help='', default=None)
 parser.add_argument('--attn-channel', type=str, dest='attn_channel', help="'1', '2', 'both', or 'none'", default='2')
 args = parser.parse_args()
@@ -273,6 +274,8 @@ if __name__ == '__main__':
     # Init config
     cfg = PCNConfig()
 
+    if args.lr is not None:
+        cfg.TRAIN.LEARNING_RATE = args.lr
     if args.batch_size is not None:
         cfg.TRAIN.BATCH_SIZE = args.batch_size
     assert args.attn_channel in ['1', '2', 'both', 'none']
