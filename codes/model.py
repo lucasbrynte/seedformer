@@ -180,7 +180,7 @@ class UpLayer(nn.Module):
     """
     Upsample Layer with upsample transformers
     """
-    def __init__(self, dim, seed_dim, up_factor=2, i=0, radius=1, n_knn=20, interpolate='three', attn_channel='2'):
+    def __init__(self, dim, seed_dim, up_factor=2, i=0, radius=1, n_knn=20, interpolate='three', attn_channel='2', avoid_seed_pos_features=False):
         super(UpLayer, self).__init__()
         assert attn_channel in ['1', '2', 'both', 'none']
         self.i = i
@@ -189,8 +189,16 @@ class UpLayer(nn.Module):
         self.n_knn = n_knn
         self.interpolate = interpolate
 
-        self.mlp_1 = MLP_CONV(in_channel=3, layer_dims=[64, 128])
-        self.mlp_2 = MLP_CONV(in_channel=128 * 2 + seed_dim, layer_dims=[256, dim])
+        self.avoid_seed_pos_features = avoid_seed_pos_features
+        if not self.avoid_seed_pos_features:
+            self.mlp_1 = MLP_CONV(in_channel=3, layer_dims=[64, 128])
+            self.mlp_2 = MLP_CONV(in_channel=128 * 2 + seed_dim, layer_dims=[256, dim])
+        else:
+            # self.mlp_1 = MLP_CONV(in_channel=3, layer_dims=[64, 128])
+            # self.mlp_2 = MLP_CONV(in_channel=128 * 2 + seed_dim, layer_dims=[256, dim])
+            self.mlp_2 = MLP_CONV(in_channel=128 * 2 + seed_dim, layer_dims=[256, 256, dim])
+        # NOTE! 2 st upsample transformers stackade i varje upsample layer, varav endast den senare genomför uppsampling.
+        # Inte nog med det! Den första gör aldrig "point-wise attention", även om så skulle vara confat! Medvetet eller inte..?
 
         self.uptrans1 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel in ['1', 'both'], up_factor=None)
         self.uptrans2 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel in ['2', 'both'], up_factor=self.up_factor)
@@ -228,11 +236,15 @@ class UpLayer(nn.Module):
             raise ValueError('Unknown Interpolation: {}'.format(self.interpolate))
 
         # Query mlps
-        feat_1 = self.mlp_1(pcd_prev)
-        feat_1 = torch.cat([feat_1,
-                            torch.max(feat_1, 2, keepdim=True)[0].repeat((1, 1, feat_1.size(2))),
-                            feat_upsample], 1)
-        Q = self.mlp_2(feat_1)
+        if not self.avoid_seed_pos_features:
+            feat_1 = self.mlp_1(pcd_prev)
+            feat_1 = torch.cat([feat_1,
+                                torch.max(feat_1, 2, keepdim=True)[0].repeat((1, 1, feat_1.size(2))),
+                                feat_upsample], 1)
+            Q = self.mlp_2(feat_1)
+        else:
+            # 3-layer MLP:
+            Q = self.mlp_2(feat_upsample)
 
         # Upsample Transformers
         H = self.uptrans1(pcd_prev, K_prev if K_prev is not None else Q, Q, upfeat=feat_upsample) # (B, 128, N_prev)
@@ -254,7 +266,7 @@ class SeedFormer(nn.Module):
     """
     SeedFormer Point Cloud Completion with Patch Seeds and Upsample Transformer
     """
-    def __init__(self, feat_dim=512, embed_dim=128, num_p0=512, n_knn=20, radius=1, up_factors=None, seed_factor=2, interpolate='three', attn_channel='2'):
+    def __init__(self, feat_dim=512, embed_dim=128, num_p0=512, n_knn=20, radius=1, up_factors=None, seed_factor=2, interpolate='three', attn_channel='2', avoid_seed_pos_features=False):
         """
         Args:
             feat_dim: dimension of global feature
@@ -278,7 +290,7 @@ class SeedFormer(nn.Module):
         up_layers = []
         for i, factor in enumerate(up_factors):
             up_layers.append(UpLayer(dim=embed_dim, seed_dim=embed_dim, up_factor=factor, i=i, n_knn=n_knn, radius=radius, 
-                             interpolate=interpolate, attn_channel=attn_channel))
+                             interpolate=interpolate, attn_channel=attn_channel, avoid_seed_pos_features=avoid_seed_pos_features))
         self.up_layers = nn.ModuleList(up_layers)
 
     def forward(self, partial_cloud):
