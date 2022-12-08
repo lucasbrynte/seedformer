@@ -159,7 +159,8 @@ def train_net(cfg):
                                                     shuffle=True,
                                                     drop_last=False)
     val_data_loader = torch.utils.data.DataLoader(dataset=val_dataset_loader.get_dataset(
-        utils.data_loaders.DatasetSubset.TEST),
+        utils.data_loaders.DatasetSubset.VAL),
+        # utils.data_loaders.DatasetSubset.TEST), # OLD usage of TEST data fro validation
                                                   batch_size=cfg.TRAIN.BATCH_SIZE,
                                                   num_workers=cfg.CONST.NUM_WORKERS//2,
                                                   collate_fn=utils.data_loaders.collate_fn,
