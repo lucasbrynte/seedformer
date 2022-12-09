@@ -199,7 +199,7 @@ class UpLayer(nn.Module):
         else:
             # self.mlp_1 = MLP_CONV(in_channel=3, layer_dims=[64, 128])
             # self.mlp_2 = MLP_CONV(in_channel=128 * 2 + seed_dim, layer_dims=[256, dim])
-            self.mlp_2 = MLP_CONV(in_channel=128 * 2 + seed_dim, layer_dims=[256, 256, dim])
+            self.mlp_2 = MLP_CONV(in_channel=seed_dim, layer_dims=[256, 256, dim])
         # NOTE! 2 st upsample transformers stackade i varje upsample layer, varav endast den senare genomför uppsampling.
         # Inte nog med det! Den första gör aldrig "point-wise attention", även om så skulle vara confat! Medvetet eller inte..?
 
