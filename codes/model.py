@@ -21,13 +21,13 @@ from models.utils import vTransformer, PointNet_SA_Module_KNN, MLP_Res, MLP_CONV
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, out_dim=1024, n_knn=20, avoid_seed_pos_features=False):
+    def __init__(self, out_dim=1024, n_knn=20, avoid_abs_pos_features=False):
         """Encoder that encodes information of partial point cloud
         """
         super(FeatureExtractor, self).__init__()
-        self._avoid_seed_pos_features = avoid_seed_pos_features
+        self._avoid_abs_pos_features = avoid_abs_pos_features
 
-        in_channel = 0 if self._avoid_seed_pos_features else 3
+        in_channel = 0 if self._avoid_abs_pos_features else 3
         self.sa_module_1 = PointNet_SA_Module_KNN(512, 16, in_channel, [64, 128], group_all=False, if_bn=False, if_idx=True)
         self.transformer_1 = vTransformer(128, dim=64, n_knn=n_knn)
         self.sa_module_2 = PointNet_SA_Module_KNN(128, 16, 128, [128, 256], group_all=False, if_bn=False, if_idx=True)
@@ -43,7 +43,7 @@ class FeatureExtractor(nn.Module):
             l3_points: (B, out_dim, 1)
         """
         l0_xyz = partial_cloud
-        l0_points = None if self._avoid_seed_pos_features else partial_cloud
+        l0_points = None if self._avoid_abs_pos_features else partial_cloud
 
         l1_xyz, l1_points, idx1 = self.sa_module_1(l0_xyz, l0_points)  # (B, 3, 512), (B, 128, 512)
         l1_points = self.transformer_1(l1_points, l1_xyz)
@@ -183,7 +183,7 @@ class UpLayer(nn.Module):
     """
     Upsample Layer with upsample transformers
     """
-    def __init__(self, dim, seed_dim, up_factor=2, i=0, radius=1, n_knn=20, interpolate='three', attn_channel='2', avoid_seed_pos_features=False):
+    def __init__(self, dim, seed_dim, up_factor=2, i=0, radius=1, n_knn=20, interpolate='three', attn_channel='2', avoid_abs_pos_features=False):
         super(UpLayer, self).__init__()
         assert attn_channel in ['1', '2', 'both', 'none']
         self.i = i
@@ -192,8 +192,8 @@ class UpLayer(nn.Module):
         self.n_knn = n_knn
         self.interpolate = interpolate
 
-        self.avoid_seed_pos_features = avoid_seed_pos_features
-        if not self.avoid_seed_pos_features:
+        self.avoid_abs_pos_features = avoid_abs_pos_features
+        if not self.avoid_abs_pos_features:
             self.mlp_1 = MLP_CONV(in_channel=3, layer_dims=[64, 128])
             self.mlp_2 = MLP_CONV(in_channel=128 * 2 + seed_dim, layer_dims=[256, dim])
         else:
@@ -239,7 +239,7 @@ class UpLayer(nn.Module):
             raise ValueError('Unknown Interpolation: {}'.format(self.interpolate))
 
         # Query mlps
-        if not self.avoid_seed_pos_features:
+        if not self.avoid_abs_pos_features:
             feat_1 = self.mlp_1(pcd_prev)
             feat_1 = torch.cat([feat_1,
                                 torch.max(feat_1, 2, keepdim=True)[0].repeat((1, 1, feat_1.size(2))),
@@ -269,7 +269,7 @@ class SeedFormer(nn.Module):
     """
     SeedFormer Point Cloud Completion with Patch Seeds and Upsample Transformer
     """
-    def __init__(self, feat_dim=512, embed_dim=128, num_p0=512, n_knn=20, radius=1, up_factors=None, seed_factor=2, interpolate='three', attn_channel='2', avoid_seed_pos_features=False):
+    def __init__(self, feat_dim=512, embed_dim=128, num_p0=512, n_knn=20, radius=1, up_factors=None, seed_factor=2, interpolate='three', attn_channel='2', avoid_abs_pos_features=False):
         """
         Args:
             feat_dim: dimension of global feature
@@ -285,7 +285,7 @@ class SeedFormer(nn.Module):
         self.num_p0 = num_p0
 
         # Seed Generator
-        self.feat_extractor = FeatureExtractor(out_dim=feat_dim, n_knn=n_knn, avoid_seed_pos_features=avoid_seed_pos_features)
+        self.feat_extractor = FeatureExtractor(out_dim=feat_dim, n_knn=n_knn, avoid_abs_pos_features=avoid_abs_pos_features)
         # SeedGenerator has only one UpTransformer layer. Let's apply attn_channel unless specified as 'none':
         self.seed_generator = SeedGenerator(feat_dim=feat_dim, seed_dim=embed_dim, n_knn=n_knn, factor=seed_factor, attn_channel=attn_channel in ['1', '2', 'both'])
 
@@ -293,7 +293,7 @@ class SeedFormer(nn.Module):
         up_layers = []
         for i, factor in enumerate(up_factors):
             up_layers.append(UpLayer(dim=embed_dim, seed_dim=embed_dim, up_factor=factor, i=i, n_knn=n_knn, radius=radius, 
-                             interpolate=interpolate, attn_channel=attn_channel, avoid_seed_pos_features=avoid_seed_pos_features))
+                             interpolate=interpolate, attn_channel=attn_channel, avoid_abs_pos_features=avoid_abs_pos_features))
         self.up_layers = nn.ModuleList(up_layers)
 
     def forward(self, partial_cloud):
