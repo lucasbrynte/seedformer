@@ -328,7 +328,11 @@ class Manager:
             val_writer.add_scalar('Loss/Epoch/cd3', test_losses.avg(3), self.epoch)
             val_writer.add_scalar('Loss/Epoch/partial_matching', test_losses.avg(4), self.epoch)
             for i, metric in enumerate(test_metrics.items):
-                val_writer.add_scalar('Metric/%s' % metric, test_metrics.avg(i), self.epoch)
+                try:
+                    val_writer.add_scalar('Metric/%s' % metric, test_metrics.avg(i), self.epoch)
+                except ZeroDivisionError:
+                    # TODO: Find the root cause of this issue
+                    pass
 
         # Record testing results
         message = '#{:d} {:.4f} {:.4f} {:.4f} {:.4f} | {:.4f} | #{:d} {:.4f}'.format(self.epoch, test_losses.avg(0), test_losses.avg(1), test_losses.avg(2), test_losses.avg(4), test_losses.avg(3), self.best_epoch, self.best_metrics)
