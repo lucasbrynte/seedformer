@@ -139,7 +139,7 @@ class Manager:
         return partial, gt
 
 
-    def train(self, model, train_data_loader, val_data_loader, cfg):
+    def train(self, model, train_data_loader, val_data_loader, cfg, train_writer, val_writer):
 
         init_epoch = 0
         steps = 0
@@ -212,6 +212,13 @@ class Manager:
                 total_partial += partial_item
                 n_itr = (epoch_idx - 1) * n_batches + batch_idx
 
+                # TB batch training record
+                train_writer.add_scalar('Loss/Batch/cd_pc', cd_pc_item, n_itr)
+                train_writer.add_scalar('Loss/Batch/cd_p1', cd_p1_item, n_itr)
+                train_writer.add_scalar('Loss/Batch/cd_p2', cd_p2_item, n_itr)
+                train_writer.add_scalar('Loss/Batch/cd_p3', cd_p3_item, n_itr)
+                train_writer.add_scalar('Loss/Batch/partial_matching', partial_item, n_itr)
+
                 # training record
                 message = '{:d} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}'.format(n_itr, cd_pc_item, cd_p1_item, cd_p2_item, cd_p3_item, partial_item)
                 self.train_record(message, show_info=False)
@@ -230,13 +237,20 @@ class Manager:
 
             epoch_end_time = time.time()
 
+            # TB epoch training record
+            train_writer.add_scalar('Loss/Epoch/cd_pc', avg_cdc, epoch_idx)
+            train_writer.add_scalar('Loss/Epoch/cd_p1', avg_cd1, epoch_idx)
+            train_writer.add_scalar('Loss/Epoch/cd_p2', avg_cd2, epoch_idx)
+            train_writer.add_scalar('Loss/Epoch/cd_p3', avg_cd3, epoch_idx)
+            train_writer.add_scalar('Loss/Epoch/partial_matching', avg_partial, epoch_idx)
+
             # Training record
             self.train_record(
                 '[Epoch %d/%d] LearningRate = %f EpochTime = %.3f (s) Losses = %s' %
                 (epoch_idx, cfg.TRAIN.N_EPOCHS, learning_rate, epoch_end_time - epoch_start_time, ['%.4f' % l for l in [avg_cdc, avg_cd1, avg_cd2, avg_cd3, avg_partial]]))
 
             # Validate the current model
-            cd_eval = self.validate(cfg, model=model, val_data_loader=val_data_loader)
+            cd_eval = self.validate(cfg, model=model, val_data_loader=val_data_loader, val_writer=val_writer)
             self.train_record('Testing scores = {:.4f}'.format(cd_eval))
 
             # Save checkpoints
@@ -262,11 +276,13 @@ class Manager:
                     self.best_metrics = cd_eval
 
         # training end
+        train_writer.close()
+        val_writer.close()
         self.train_record_file.close()
         self.test_record_file.close()
 
 
-    def validate(self, cfg, model=None, val_data_loader=None, outdir=None):
+    def validate(self, cfg, model=None, val_data_loader=None, outdir=None, val_writer=None):
         # Enable the inbuilt cudnn auto-tuner to find the best algorithm to use
         torch.backends.cudnn.benchmark = True
 
@@ -303,6 +319,16 @@ class Manager:
                 _metrics = [cd3]
                 test_losses.update([cdc, cd1, cd2, cd3, partial_matching])
                 test_metrics.update(_metrics)
+
+        # Add validation results to TensorBoard
+        if val_writer is not None:
+            val_writer.add_scalar('Loss/Epoch/cdc', test_losses.avg(0), self.epoch)
+            val_writer.add_scalar('Loss/Epoch/cd1', test_losses.avg(1), self.epoch)
+            val_writer.add_scalar('Loss/Epoch/cd2', test_losses.avg(2), self.epoch)
+            val_writer.add_scalar('Loss/Epoch/cd3', test_losses.avg(3), self.epoch)
+            val_writer.add_scalar('Loss/Epoch/partial_matching', test_losses.avg(4), self.epoch)
+            for i, metric in enumerate(test_metrics.items):
+                val_writer.add_scalar('Metric/%s' % metric, test_metrics.avg(i), self.epoch)
 
         # Record testing results
         message = '#{:d} {:.4f} {:.4f} {:.4f} {:.4f} | {:.4f} | #{:d} {:.4f}'.format(self.epoch, test_losses.avg(0), test_losses.avg(1), test_losses.avg(2), test_losses.avg(4), test_losses.avg(3), self.best_epoch, self.best_metrics)

@@ -19,6 +19,7 @@ import numpy as np
 import torch
 import json
 import time
+from torch.utils.tensorboard import SummaryWriter
 import utils.datasets
 from easydict import EasyDict as edict
 from importlib import import_module
@@ -160,6 +161,7 @@ def train_net(cfg):
     cfg.DIR.OUT_PATH = os.path.join(cfg.DIR.OUT_PATH, TRAIN_NAME+timestr)
     cfg.DIR.CHECKPOINTS = os.path.join(cfg.DIR.OUT_PATH, 'checkpoints')
     cfg.DIR.LOGS = cfg.DIR.OUT_PATH
+    cfg.DIR.TB = os.path.join(cfg.DIR.OUT_PATH, 'tb')
     print('Saving outdir: {}'.format(cfg.DIR.OUT_PATH))
     if not os.path.exists(cfg.DIR.CHECKPOINTS):
         os.makedirs(cfg.DIR.CHECKPOINTS)
@@ -172,6 +174,11 @@ def train_net(cfg):
 
     # Save Arguments
     torch.save(args, os.path.join(cfg.DIR.LOGS, 'args_training.pth'))
+
+    # Create tensorboard writers
+    os.makedirs(cfg.DIR.TB, exist_ok=True)
+    train_writer = SummaryWriter(os.path.join(cfg.DIR.TB, 'train'))
+    val_writer = SummaryWriter(os.path.join(cfg.DIR.TB, 'test'))
 
     #######################
     # Prepare Network Model
@@ -198,7 +205,7 @@ def train_net(cfg):
     manager = Manager(model, cfg)
 
     # Start training
-    manager.train(model, train_data_loader, val_data_loader, cfg)
+    manager.train(model, train_data_loader, val_data_loader, cfg, train_writer, val_writer)
 
 
 def test_net(cfg):
