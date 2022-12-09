@@ -224,6 +224,9 @@ class Manager:
                 message = '{:d} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}'.format(n_itr, cd_pc_item, cd_p1_item, cd_p2_item, cd_p3_item, partial_item)
                 self.train_record(message, show_info=False)
 
+                # # For fast debugging: Iterate only 1 batch:
+                # break
+
             # NEW:
             # Update learning rate
             # NOTE: At the scheduler switch, SequentialLR.step() calls scheduler.step(0), triggering an EPOCH_DEPRECATION_WARNING. Confusing but harmless.
