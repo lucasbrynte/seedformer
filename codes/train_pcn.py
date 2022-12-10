@@ -203,7 +203,7 @@ def train_net(cfg):
     Model = import_module(args.net_model)
     model = Model.__dict__[args.arch_model](
         attn_channel = cfg.NETWORK.ATTN_CHANNEL,
-        avoid_abs_pos_features = cfg.NETWORK.AVOID_SEED_POS_FEATURES,
+        avoid_abs_pos_features = cfg.NETWORK.AVOID_ABS_POS_FEATURES,
         up_factors = cfg.NETWORK.UPSAMPLE_FACTORS,
     )
     # print(model)
@@ -274,7 +274,7 @@ def test_net(cfg):
     Model = import_module(args.net_model)
     model = Model.__dict__[args.arch_model](
         attn_channel = cfg.NETWORK.ATTN_CHANNEL,
-        avoid_abs_pos_features = cfg.NETWORK.AVOID_SEED_POS_FEATURES,
+        avoid_abs_pos_features = cfg.NETWORK.AVOID_ABS_POS_FEATURES,
         up_factors = cfg.NETWORK.UPSAMPLE_FACTORS,
     )
     if torch.cuda.is_available():
@@ -319,7 +319,7 @@ if __name__ == '__main__':
         cfg.TRAIN.BATCH_SIZE = args.batch_size
     assert args.attn_channel in ['1', '2', 'both', 'none']
     cfg.NETWORK.ATTN_CHANNEL = args.attn_channel
-    cfg.NETWORK.AVOID_SEED_POS_FEATURES = args.avoid_abs_pos_features
+    cfg.NETWORK.AVOID_ABS_POS_FEATURES = args.avoid_abs_pos_features
 
     # setting
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
