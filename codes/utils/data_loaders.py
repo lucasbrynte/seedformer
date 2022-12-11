@@ -84,9 +84,9 @@ class Dataset(torch.utils.data.dataset.Dataset):
         rand_idx = -1
 
         # random select one sample per shape for training
-        if 'n_renderings' in self.options:
-            rand_idx = random.randint(0, self.options['n_renderings'] -
-                                      1) if self.options['shuffle'] else 0
+        # if 'n_renderings' in self.options:
+        #     rand_idx = random.randint(0, self.options['n_renderings'] -
+        #                               1) if self.options['shuffle'] else 0
 
         # load required data
         for ri in self.options['required_items']:
@@ -130,7 +130,8 @@ class ShapeNetDataLoader(object):
             {
                 'n_renderings': n_renderings,
                 'required_items': ['partial_cloud', 'gtcloud'],
-                'shuffle': subset == DatasetSubset.TRAIN
+                'shuffle': False
+                # 'shuffle': subset == DatasetSubset.TRAIN
             }, file_list, transforms)
 
     def _get_transforms(self, cfg, subset):
@@ -141,10 +142,10 @@ class ShapeNetDataLoader(object):
                     'n_points': cfg.DATASETS.SHAPENET.N_POINTS
                 },
                 'objects': ['partial_cloud']
-            }, {
-                'callback':
-                'RandomMirrorPoints',
-                'objects': ['partial_cloud', 'gtcloud']
+            # }, {
+            #     'callback':
+            #     'RandomMirrorPoints',
+            #     'objects': ['partial_cloud', 'gtcloud']
             }, {
                 'callback':
                 'ToTensor',

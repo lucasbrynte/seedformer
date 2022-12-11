@@ -16,6 +16,7 @@ Date: 2022-5-31
 import argparse
 import os
 import numpy as np
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 import torch
 import json
 import time
@@ -161,7 +162,8 @@ def train_net(cfg):
                                                     num_workers=cfg.CONST.NUM_WORKERS,
                                                     collate_fn=utils.data_loaders.collate_fn,
                                                     pin_memory=True,
-                                                    shuffle=True,
+                                                    # shuffle=True,
+                                                    shuffle=False,
                                                     drop_last=False)
     val_data_loader = torch.utils.data.DataLoader(dataset=val_dataset_loader.get_dataset(
         utils.data_loaders.DatasetSubset.VAL),
@@ -208,7 +210,8 @@ def train_net(cfg):
     )
     # print(model)
     if torch.cuda.is_available():
-        model = torch.nn.DataParallel(model).cuda()
+        # model = torch.nn.DataParallel(model).cuda()
+        model = model.cuda()
 
     # load existing model
     if 'WEIGHTS' in cfg.CONST:
@@ -305,9 +308,11 @@ def set_seed(seed):
 
 if __name__ == '__main__':
     # Check python version
-    #seed = 1
-    #set_seed(seed)
-    
+    seed = 1
+    set_seed(seed)
+
+    torch.use_deterministic_algorithms(True)
+
     print('cuda available ', torch.cuda.is_available())
 
     # Init config
