@@ -162,8 +162,7 @@ def train_net(cfg):
                                                     num_workers=cfg.CONST.NUM_WORKERS,
                                                     collate_fn=utils.data_loaders.collate_fn,
                                                     pin_memory=True,
-                                                    # shuffle=True,
-                                                    shuffle=False,
+                                                    shuffle=True,
                                                     drop_last=False)
     val_data_loader = torch.utils.data.DataLoader(dataset=val_dataset_loader.get_dataset(
         utils.data_loaders.DatasetSubset.VAL),

@@ -130,8 +130,7 @@ class ShapeNetDataLoader(object):
             {
                 'n_renderings': n_renderings,
                 'required_items': ['partial_cloud', 'gtcloud'],
-                'shuffle': False
-                # 'shuffle': subset == DatasetSubset.TRAIN
+                'shuffle': subset == DatasetSubset.TRAIN
             }, file_list, transforms)
 
     def _get_transforms(self, cfg, subset):
