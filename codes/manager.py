@@ -278,6 +278,9 @@ class Manager:
                 if cd_eval < self.best_metrics:
                     self.best_metrics = cd_eval
 
+            # cd_eval is an ordinary python float, but numpy works fine for NaN detection:
+            assert np.isfinite(cd_eval), 'Encountered NaN validation loss at epoch {}'.format(epoch_idx)
+
         # training end
         train_writer.close()
         val_writer.close()
