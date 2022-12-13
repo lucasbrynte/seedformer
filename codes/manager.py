@@ -213,11 +213,11 @@ class Manager:
                 n_itr = (epoch_idx - 1) * n_batches + batch_idx
 
                 # TB batch training record
-                train_writer.add_scalar('Loss/Batch/cd_pc', cd_pc_item, n_itr)
-                train_writer.add_scalar('Loss/Batch/cd_p1', cd_p1_item, n_itr)
-                train_writer.add_scalar('Loss/Batch/cd_p2', cd_p2_item, n_itr)
-                train_writer.add_scalar('Loss/Batch/cd_p3', cd_p3_item, n_itr)
-                train_writer.add_scalar('Loss/Batch/partial_matching', partial_item, n_itr)
+                train_writer.add_scalar('Train/Loss/Batch/cd_pc', cd_pc_item, n_itr)
+                train_writer.add_scalar('Train/Loss/Batch/cd_p1', cd_p1_item, n_itr)
+                train_writer.add_scalar('Train/Loss/Batch/cd_p2', cd_p2_item, n_itr)
+                train_writer.add_scalar('Train/Loss/Batch/cd_p3', cd_p3_item, n_itr)
+                train_writer.add_scalar('Train/Loss/Batch/partial_matching', partial_item, n_itr)
 
                 # training record
                 message = '{:d} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}'.format(n_itr, cd_pc_item, cd_p1_item, cd_p2_item, cd_p3_item, partial_item)
@@ -238,11 +238,11 @@ class Manager:
             epoch_end_time = time.time()
 
             # TB epoch training record
-            train_writer.add_scalar('Loss/Epoch/cd_pc', avg_cdc, epoch_idx)
-            train_writer.add_scalar('Loss/Epoch/cd_p1', avg_cd1, epoch_idx)
-            train_writer.add_scalar('Loss/Epoch/cd_p2', avg_cd2, epoch_idx)
-            train_writer.add_scalar('Loss/Epoch/cd_p3', avg_cd3, epoch_idx)
-            train_writer.add_scalar('Loss/Epoch/partial_matching', avg_partial, epoch_idx)
+            train_writer.add_scalar('Train/Loss/Epoch/cd_pc', avg_cdc, epoch_idx)
+            train_writer.add_scalar('Train/Loss/Epoch/cd_p1', avg_cd1, epoch_idx)
+            train_writer.add_scalar('Train/Loss/Epoch/cd_p2', avg_cd2, epoch_idx)
+            train_writer.add_scalar('Train/Loss/Epoch/cd_p3', avg_cd3, epoch_idx)
+            train_writer.add_scalar('Train/Loss/Epoch/partial_matching', avg_partial, epoch_idx)
 
             # Training record
             self.train_record(
@@ -322,11 +322,11 @@ class Manager:
 
         # Add validation results to TensorBoard
         if val_writer is not None:
-            val_writer.add_scalar('Loss/Epoch/cdc', test_losses.avg(0), self.epoch)
-            val_writer.add_scalar('Loss/Epoch/cd1', test_losses.avg(1), self.epoch)
-            val_writer.add_scalar('Loss/Epoch/cd2', test_losses.avg(2), self.epoch)
-            val_writer.add_scalar('Loss/Epoch/cd3', test_losses.avg(3), self.epoch)
-            val_writer.add_scalar('Loss/Epoch/partial_matching', test_losses.avg(4), self.epoch)
+            val_writer.add_scalar('Val/Loss/Epoch/cd_pc', test_losses.avg(0), self.epoch)
+            val_writer.add_scalar('Val/Loss/Epoch/cd_p1', test_losses.avg(1), self.epoch)
+            val_writer.add_scalar('Val/Loss/Epoch/cd_p2', test_losses.avg(2), self.epoch)
+            val_writer.add_scalar('Val/Loss/Epoch/cd_p3', test_losses.avg(3), self.epoch)
+            val_writer.add_scalar('Val/Loss/Epoch/partial_matching', test_losses.avg(4), self.epoch)
             for i, metric in enumerate(test_metrics.items):
                 try:
                     val_writer.add_scalar('Metric/%s' % metric, test_metrics.avg(i), self.epoch)
