@@ -45,7 +45,8 @@ parser.add_argument('--pretrained', type=str, default='', help='Pretrained path 
 parser.add_argument('--lr', type=float, dest='lr', help='', default=None)
 parser.add_argument('--batch-size', type=int, dest='batch_size', help='', default=None)
 parser.add_argument('--attn-channel', type=str, dest='attn_channel', help="'1', '2', 'both', or 'none'", default='2')
-parser.add_argument('--avoid-abs-pos-features', dest='avoid_abs_pos_features', help='', action='store_true')
+parser.add_argument('--pos-features-feat-extractor', type=str, dest='pos_features_feat_extractor', help="'abs', 'rel', or 'none'", default='abs')
+parser.add_argument('--pos-features-up-layers', type=str, dest='pos_features_up_layers', help="'abs', 'rel', 'rel_nofeatmax', 'none', or 'none_deeper'", default='abs')
 parser.add_argument('--mode', type=str, default='median', help='Testing mode [easy, median, hard].')
 args = parser.parse_args()
 
@@ -173,7 +174,8 @@ def train_net(cfg):
     Model = import_module(args.net_model)
     model = Model.__dict__[args.arch_model](
         attn_channel = cfg.NETWORK.ATTN_CHANNEL,
-        avoid_abs_pos_features = cfg.NETWORK.AVOID_ABS_POS_FEATURES,
+        pos_features_feat_extractor = cfg.NETWORK.POS_FEATURES_FEAT_EXTRACTOR,
+        pos_features_up_layers = cfg.NETWORK.POS_FEATURES_UP_LAYERS,
         up_factors = cfg.NETWORK.UPSAMPLE_FACTORS,
     )
     #print(model)
@@ -238,7 +240,8 @@ def test_net(cfg):
     Model = import_module(args.net_model)
     model = Model.__dict__[args.arch_model](
         attn_channel = cfg.NETWORK.ATTN_CHANNEL,
-        avoid_abs_pos_features = cfg.NETWORK.AVOID_ABS_POS_FEATURES,
+        pos_features_feat_extractor = cfg.NETWORK.POS_FEATURES_FEAT_EXTRACTOR,
+        pos_features_up_layers = cfg.NETWORK.POS_FEATURES_UP_LAYERS,
         up_factors = cfg.NETWORK.UPSAMPLE_FACTORS,
     )
     if torch.cuda.is_available():
@@ -283,7 +286,10 @@ if __name__ == '__main__':
         cfg.TRAIN.BATCH_SIZE = args.batch_size
     assert args.attn_channel in ['1', '2', 'both', 'none']
     cfg.NETWORK.ATTN_CHANNEL = args.attn_channel
-    cfg.NETWORK.AVOID_ABS_POS_FEATURES = args.avoid_abs_pos_features
+    assert args.pos_features_feat_extractor in ['abs', 'rel', 'none']
+    cfg.NETWORK.POS_FEATURES_FEAT_EXTRACTOR = args.pos_features_feat_extractor
+    assert args.pos_features_up_layers in ['abs', 'rel', 'rel_nofeatmax', 'none', 'none_deeper']
+    cfg.NETWORK.POS_FEATURES_UP_LAYERS = args.pos_features_up_layers
 
     # setting
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
