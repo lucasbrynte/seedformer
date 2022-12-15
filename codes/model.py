@@ -175,14 +175,18 @@ class UpTransformer(nn.Module):
 
         # knn value is correct
         value = grouping_operation(value, idx_knn) + pos_embedding + upfeat_rel # (B, dim, N, k)
+        val_old = value
         value = self.upsample1(value) # (B, dim, N*up_factor, k)
+        assert torch.all(value == val_old.repeat_interleave(self.up_factor, dim=2))
 
         agg = einsum('b c i j, b c i j -> b c i', attention, value)  # (B, dim, N*up_factor)
         y = self.conv_end(agg) # (B, out_dim, N*up_factor)
 
         # shortcut
         identity = self.residual_layer(identity) # (B, out_dim, N)
+        id_old = identity
         identity = self.upsample2(identity) # (B, out_dim, N*up_factor)
+        assert torch.all(identity == id_old.repeat_interleave(self.up_factor, dim=2))
 
         return y+identity
         
@@ -285,11 +289,13 @@ class UpLayer(nn.Module):
 
         # Get current features K
         H_up = self.upsample(H)
+        assert torch.all(H_up == H.repeat_interleave(self.up_factor, dim=2))
         K_curr = self.mlp_delta_feature(torch.cat([feat_child, H_up], 1))
 
         # New point cloud
         delta = torch.tanh(self.mlp_delta(torch.relu(K_curr))) / self.radius**self.i  # (B, 3, N_prev * up_factor)
         pcd_new = self.upsample(pcd_prev)
+        assert torch.all(pcd_new == pcd_prev.repeat_interleave(self.up_factor, dim=2))
         pcd_new = pcd_new + delta
 
         return pcd_new, K_curr
