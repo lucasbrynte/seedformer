@@ -95,7 +95,7 @@ class UpTransformer(nn.Module):
                  pos_hidden_dim=64, attn_hidden_multiplier=4, scale_layer=nn.Softmax, attn_channel=True):
         super(UpTransformer, self).__init__()
         self.n_knn = n_knn
-        self.up_factor = up_factor
+        self.up_factor = up_factor if up_factor is not None else 1
         self.use_upfeat = use_upfeat
         attn_out_channel = dim if attn_channel else 1
 
