@@ -103,7 +103,6 @@ def PCNConfig():
     __C.DIR.OUT_PATH                                 = '../results'
     # __C.DIR.TEST_PATH                                = '../test'
     __C.DIR.TEST_PATH                                = '../results/test'
-    __C.CONST.DEVICE                                 = '0, 1'
     # __C.CONST.WEIGHTS                                = None # 'ckpt-best.pth'  # specify a path to run test and inference
 
     #
@@ -303,10 +302,6 @@ if __name__ == '__main__':
     cfg.NETWORK.POS_FEATURES_FEAT_EXTRACTOR = args.pos_features_feat_extractor
     assert args.pos_features_up_layers in ['abs', 'rel', 'rel_nofeatmax', 'none', 'none_deeper']
     cfg.NETWORK.POS_FEATURES_UP_LAYERS = args.pos_features_up_layers
-
-    # setting
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = cfg.CONST.DEVICE
 
     if not args.test and not args.inference:
         train_net(cfg)
