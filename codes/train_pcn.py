@@ -92,6 +92,7 @@ def PCNConfig():
     #
     __C.PARALLEL                                        = edict()
     __C.PARALLEL.NUM_WORKERS                            = 8
+    __C.PARALLEL.MULTIGPU                               = True
 
     #
     # Constants
@@ -197,8 +198,11 @@ def train_net(cfg):
         up_factors = cfg.NETWORK.UPSAMPLE_FACTORS,
     )
     # print(model)
+    if cfg.PARALLEL.MULTIGPU:
+        model = torch.nn.DataParallel(model)
+        # model = torch.nn.DistributedDataParallel(model)
     if torch.cuda.is_available():
-        model = torch.nn.DataParallel(model).cuda()
+        model = model.cuda()
 
     # load existing model
     if 'WEIGHTS' in cfg.CONST:
@@ -260,8 +264,11 @@ def test_net(cfg):
         pos_features_up_layers = cfg.NETWORK.POS_FEATURES_UP_LAYERS,
         up_factors = cfg.NETWORK.UPSAMPLE_FACTORS,
     )
+    if cfg.PARALLEL.MULTIGPU:
+        model = torch.nn.DataParallel(model)
+        # model = torch.nn.DistributedDataParallel(model)
     if torch.cuda.is_available():
-        model = torch.nn.DataParallel(model).cuda()
+        model = model.cuda()
 
     # load pretrained model
     cfg.CONST.WEIGHTS = os.path.join(cfg.DIR.OUT_PATH, cfg.DIR.PRETRAIN, 'checkpoints', 'ckpt-best.pth')
