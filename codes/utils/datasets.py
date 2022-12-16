@@ -534,7 +534,7 @@ def init_test_dataloader(cfg):
     test_data_loader = torch.utils.data.DataLoader(
         dataset = test_dataset_wrapper.get_dataset(DatasetSubset.TEST),
         batch_size = 1,
-        num_workers = cfg.CONST.NUM_WORKERS,
+        num_workers = cfg.PARALLEL.NUM_WORKERS,
         collate_fn = collate_fn,
         pin_memory = True,
         shuffle = False,
@@ -548,7 +548,7 @@ def init_train_val_dataloaders(cfg):
     train_data_loader = torch.utils.data.DataLoader(
         dataset = train_dataset_wrapper.get_dataset(DatasetSubset.TRAIN),
         batch_size = cfg.TRAIN.BATCH_SIZE,
-        num_workers = cfg.CONST.NUM_WORKERS,
+        num_workers = cfg.PARALLEL.NUM_WORKERS,
         collate_fn = collate_fn,
         pin_memory = True,
         shuffle = True,
@@ -561,7 +561,7 @@ def init_train_val_dataloaders(cfg):
         val_data_loaders['VAL'] = torch.utils.data.DataLoader(
             dataset = val_dataset_wrapper.get_dataset(DatasetSubset.VAL),
             batch_size = cfg.TRAIN.BATCH_SIZE,
-            num_workers = cfg.CONST.NUM_WORKERS//2,
+            num_workers = cfg.PARALLEL.NUM_WORKERS//2,
             collate_fn = collate_fn,
             pin_memory = True,
             shuffle = False,

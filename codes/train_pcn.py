@@ -88,11 +88,15 @@ def PCNConfig():
     __C.DATASET.VALIDATE_ON_TEST                     = False
 
     #
+    # Parallelism
+    #
+    __C.PARALLEL                                        = edict()
+    __C.PARALLEL.NUM_WORKERS                            = 8
+
+    #
     # Constants
     #
     __C.CONST                                        = edict()
-
-    __C.CONST.NUM_WORKERS                            = 8
     __C.CONST.N_INPUT_POINTS                         = 2048
 
     #
