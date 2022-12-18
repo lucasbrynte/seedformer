@@ -161,7 +161,8 @@ def train_net(cfg):
                                                   num_workers=cfg.CONST.NUM_WORKERS//2,
                                                   collate_fn=utils.datasets.collate_fn,
                                                   pin_memory=True,
-                                                  shuffle=False)
+                                                  shuffle=False,
+                                                  drop_last=False)
 
     # Set up folders for logs and checkpoints
     timestr = time.strftime('_Log_%Y_%m_%d_%H_%M_%S', time.gmtime())
@@ -225,7 +226,8 @@ def test_net(cfg):
                                                   num_workers=cfg.CONST.NUM_WORKERS,
                                                   collate_fn=utils.datasets.collate_fn,
                                                   pin_memory=True,
-                                                  shuffle=False)
+                                                  shuffle=False,
+                                                  drop_last=False)
 
     # Path for pretrained model
     if args.pretrained == '':
