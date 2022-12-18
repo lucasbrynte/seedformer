@@ -525,3 +525,49 @@ DATASET_WRAPPER_MAPPING = {
     'KITTI': KittiDatasetWrapper,
     'ShapeNet55': ShapeNet55DatasetWrapper,
 }  # yapf: disable
+
+
+# ////////////////////////////////////// = Dataloader Initialization Functions = ////////////////////////////////////// #
+
+def init_test_dataloader(cfg):
+    test_dataset_wrapper = DATASET_WRAPPER_MAPPING[cfg.DATASET.TEST_DATASET](cfg)
+    test_data_loader = torch.utils.data.DataLoader(
+        dataset = test_dataset_wrapper.get_dataset(DatasetSubset.TEST),
+        batch_size = 1,
+        num_workers = cfg.CONST.NUM_WORKERS,
+        collate_fn = collate_fn,
+        pin_memory = True,
+        shuffle = False,
+        drop_last = False,
+    )
+    return test_data_loader
+
+
+def init_train_val_dataloaders(cfg):
+    train_dataset_wrapper = DATASET_WRAPPER_MAPPING[cfg.DATASET.TRAIN_DATASET](cfg)
+    train_data_loader = torch.utils.data.DataLoader(
+        dataset = train_dataset_wrapper.get_dataset(DatasetSubset.TRAIN),
+        batch_size = cfg.TRAIN.BATCH_SIZE,
+        num_workers = cfg.CONST.NUM_WORKERS,
+        collate_fn = collate_fn,
+        pin_memory = True,
+        shuffle = True,
+        drop_last = False,
+    )
+
+    val_data_loaders = {}
+    if cfg.DATASET.VAL_DATASET is not None:
+        val_dataset_wrapper = DATASET_WRAPPER_MAPPING[cfg.DATASET.VAL_DATASET](cfg)
+        val_data_loaders['VAL'] = torch.utils.data.DataLoader(
+            dataset = val_dataset_wrapper.get_dataset(DatasetSubset.VAL),
+            batch_size = cfg.TRAIN.BATCH_SIZE,
+            num_workers = cfg.CONST.NUM_WORKERS//2,
+            collate_fn = collate_fn,
+            pin_memory = True,
+            shuffle = False,
+            drop_last = False,
+        )
+    if cfg.DATASET.VALIDATE_ON_TEST:
+        val_data_loaders['TEST'] = init_test_dataloader(cfg)
+
+    return train_data_loader, val_data_loaders

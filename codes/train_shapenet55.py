@@ -70,7 +70,10 @@ def ShapeNet55Config():
     __C.DATASET                                      = edict()
     # Dataset Options: Completion3D, ShapeNet (=PCN), ShapeNet55, ShapeNetCars, Completion3DPCCT
     __C.DATASET.TRAIN_DATASET                        = 'ShapeNet55'
+    __C.DATASET.VAL_DATASET                          = None
     __C.DATASET.TEST_DATASET                         = 'ShapeNet55'
+    # Validate on the test set, since there is no validation set:
+    __C.DATASET.VALIDATE_ON_TEST                     = True
 
     #
     # Constants
@@ -134,26 +137,12 @@ def train_net(cfg):
     # Load Train/Val Dataset
     ########################
 
-    train_dataset_wrapper = utils.datasets.DATASET_WRAPPER_MAPPING[cfg.DATASET.TRAIN_DATASET](cfg)
-    val_dataset_wrapper = utils.datasets.DATASET_WRAPPER_MAPPING[cfg.DATASET.TEST_DATASET](cfg)
-
-    train_data_loader = torch.utils.data.DataLoader(dataset=train_dataset_wrapper.get_dataset(
-        utils.datasets.DatasetSubset.TRAIN),
-                                                    batch_size=cfg.TRAIN.BATCH_SIZE,
-                                                    num_workers=cfg.CONST.NUM_WORKERS,
-                                                    collate_fn=utils.datasets.collate_fn,
-                                                    pin_memory=True,
-                                                    shuffle=True,
-                                                    drop_last=False)
-    # NOTE: ShapeNet-55 does not have a separate validation set. TEST is used for validation.
-    val_data_loader = torch.utils.data.DataLoader(dataset=val_dataset_wrapper.get_dataset(
-        utils.datasets.DatasetSubset.TEST),
-                                                  batch_size=cfg.TRAIN.BATCH_SIZE,
-                                                  num_workers=cfg.CONST.NUM_WORKERS//2,
-                                                  collate_fn=utils.datasets.collate_fn,
-                                                  pin_memory=True,
-                                                  shuffle=False,
-                                                  drop_last=False)
+    train_data_loader, val_data_loaders = utils.datasets.init_train_val_dataloaders(cfg)
+    assert isinstance(val_data_loaders, dict)
+    if len(val_data_loaders) == 1:
+        val_data_loader = next(iter(val_data_loaders.values()))
+    else:
+        raise NotImplementedError
 
     # Set up folders for logs and checkpoints
     timestr = time.strftime('_Log_%Y_%m_%d_%H_%M_%S', time.gmtime())
@@ -209,16 +198,7 @@ def test_net(cfg):
     # Load Train/Val Dataset
     ########################
 
-    test_dataset_wrapper = utils.datasets.DATASET_WRAPPER_MAPPING[cfg.DATASET.TEST_DATASET](cfg)
-
-    test_data_loader = torch.utils.data.DataLoader(dataset=test_dataset_wrapper.get_dataset(
-        utils.datasets.DatasetSubset.TEST),
-                                                  batch_size=1,
-                                                  num_workers=cfg.CONST.NUM_WORKERS,
-                                                  collate_fn=utils.datasets.collate_fn,
-                                                  pin_memory=True,
-                                                  shuffle=False,
-                                                  drop_last=False)
+    test_data_loader = utils.datasets.init_test_dataloader(cfg)
 
     # Path for pretrained model
     if args.pretrained == '':
