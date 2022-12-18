@@ -19,7 +19,7 @@ import numpy as np
 import torch
 import json
 import time
-import utils.data_loaders
+import utils.datasets
 from easydict import EasyDict as edict
 from importlib import import_module
 from pprint import pprint
@@ -134,23 +134,23 @@ def train_net(cfg):
     # Load Train/Val Dataset
     ########################
 
-    train_dataset_loader = utils.data_loaders.DATASET_LOADER_MAPPING[cfg.DATASET.TRAIN_DATASET](cfg)
-    val_dataset_loader = utils.data_loaders.DATASET_LOADER_MAPPING[cfg.DATASET.TEST_DATASET](cfg)
+    train_dataset_wrapper = utils.datasets.DATASET_WRAPPER_MAPPING[cfg.DATASET.TRAIN_DATASET](cfg)
+    val_dataset_wrapper = utils.datasets.DATASET_WRAPPER_MAPPING[cfg.DATASET.TEST_DATASET](cfg)
 
-    train_data_loader = torch.utils.data.DataLoader(dataset=train_dataset_loader.get_dataset(
-        utils.data_loaders.DatasetSubset.TRAIN),
+    train_data_loader = torch.utils.data.DataLoader(dataset=train_dataset_wrapper.get_dataset(
+        utils.datasets.DatasetSubset.TRAIN),
                                                     batch_size=cfg.TRAIN.BATCH_SIZE,
                                                     num_workers=cfg.CONST.NUM_WORKERS,
-                                                    collate_fn=utils.data_loaders.collate_fn,
+                                                    collate_fn=utils.datasets.collate_fn,
                                                     pin_memory=True,
                                                     shuffle=True,
                                                     drop_last=False)
     # NOTE: ShapeNet-55 does not have a separate validation set. TEST is used for validation.
-    val_data_loader = torch.utils.data.DataLoader(dataset=val_dataset_loader.get_dataset(
-        utils.data_loaders.DatasetSubset.TEST),
+    val_data_loader = torch.utils.data.DataLoader(dataset=val_dataset_wrapper.get_dataset(
+        utils.datasets.DatasetSubset.TEST),
                                                   batch_size=cfg.TRAIN.BATCH_SIZE,
                                                   num_workers=cfg.CONST.NUM_WORKERS//2,
-                                                  collate_fn=utils.data_loaders.collate_fn,
+                                                  collate_fn=utils.datasets.collate_fn,
                                                   pin_memory=True,
                                                   shuffle=False)
 
@@ -208,13 +208,13 @@ def test_net(cfg):
     # Load Train/Val Dataset
     ########################
 
-    test_dataset_loader = utils.data_loaders.DATASET_LOADER_MAPPING[cfg.DATASET.TEST_DATASET](cfg)
+    test_dataset_wrapper = utils.datasets.DATASET_WRAPPER_MAPPING[cfg.DATASET.TEST_DATASET](cfg)
 
-    test_data_loader = torch.utils.data.DataLoader(dataset=test_dataset_loader.get_dataset(
-        utils.data_loaders.DatasetSubset.TEST),
+    test_data_loader = torch.utils.data.DataLoader(dataset=test_dataset_wrapper.get_dataset(
+        utils.datasets.DatasetSubset.TEST),
                                                   batch_size=1,
                                                   num_workers=cfg.CONST.NUM_WORKERS,
-                                                  collate_fn=utils.data_loaders.collate_fn,
+                                                  collate_fn=utils.datasets.collate_fn,
                                                   pin_memory=True,
                                                   shuffle=False)
 

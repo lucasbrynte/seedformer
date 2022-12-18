@@ -26,7 +26,6 @@ import torch
 from torch.optim.lr_scheduler import SequentialLR, LinearLR, StepLR
 import time
 
-import utils.data_loaders
 import utils.helpers
 from utils.average_meter import AverageMeter
 from utils.metrics import Metrics

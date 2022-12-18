@@ -109,7 +109,7 @@ class Dataset(torch.utils.data.dataset.Dataset):
         return sample['taxonomy_id'], sample['model_id'], data
 
 
-class ShapeNetDataLoader(object):
+class ShapeNetDatasetWrapper(object):
     """
     PCN dataset: get dataset file list
     """
@@ -206,12 +206,12 @@ class ShapeNetDataLoader(object):
         return file_list
 
 
-class ShapeNetCarsDataLoader(ShapeNetDataLoader):
+class ShapeNetCarsDatasetWrapper(ShapeNetDatasetWrapper):
     """
     ShapeNet only on car category
     """
     def __init__(self, cfg):
-        super(ShapeNetCarsDataLoader, self).__init__(cfg)
+        super(ShapeNetCarsDatasetWrapper, self).__init__(cfg)
 
         # Remove other categories except cars
         self.dataset_categories = [
@@ -220,7 +220,7 @@ class ShapeNetCarsDataLoader(ShapeNetDataLoader):
         ]
 
 
-class Completion3DDataLoader(object):
+class Completion3DDatasetWrapper(object):
     """
     Completion3D: get dataset file list
     """
@@ -326,12 +326,12 @@ class Completion3DDataLoader(object):
         return file_list
 
 
-class Completion3DPCCTDataLoader(Completion3DDataLoader):
+class Completion3DPCCTDatasetWrapper(Completion3DDatasetWrapper):
     """
     Dataset Completion3D containing only plane, car, chair, table
     """
     def __init__(self, cfg):
-        super(Completion3DPCCTDataLoader, self).__init__(cfg)
+        super(Completion3DPCCTDatasetWrapper, self).__init__(cfg)
 
         # Remove other categories except couch, chairs, car, lamps
         cat_set = {'02691156', '03001627', '02958343',
@@ -343,7 +343,7 @@ class Completion3DPCCTDataLoader(Completion3DDataLoader):
         ]
 
 
-class KittiDataLoader(object):
+class KittiDatasetWrapper(object):
     """
     KITTI: extracted car objects
     """
@@ -464,7 +464,7 @@ class ShapeNet55Dataset(torch.utils.data.dataset.Dataset):
         return sample['taxonomy_id'], sample['model_id'], data
 
 
-class ShapeNet55DataLoader(object):
+class ShapeNet55DatasetWrapper(object):
     """
     ShapeNet55: get dataset file list
     """
@@ -515,13 +515,13 @@ class ShapeNet55DataLoader(object):
         return file_list
 
 
-# //////////////////////////////////////////// = Dataset Loader Mapping = //////////////////////////////////////////// #
+# //////////////////////////////////////////// = Dataset Wrapper Mapping = //////////////////////////////////////////// #
 
-DATASET_LOADER_MAPPING = {
-    'Completion3D': Completion3DDataLoader,
-    'Completion3DPCCT': Completion3DPCCTDataLoader,
-    'ShapeNet': ShapeNetDataLoader,
-    'ShapeNetCars': ShapeNetCarsDataLoader,
-    'KITTI': KittiDataLoader,
-    'ShapeNet55': ShapeNet55DataLoader,
+DATASET_WRAPPER_MAPPING = {
+    'Completion3D': Completion3DDatasetWrapper,
+    'Completion3DPCCT': Completion3DPCCTDatasetWrapper,
+    'ShapeNet': ShapeNetDatasetWrapper,
+    'ShapeNetCars': ShapeNetCarsDatasetWrapper,
+    'KITTI': KittiDatasetWrapper,
+    'ShapeNet55': ShapeNet55DatasetWrapper,
 }  # yapf: disable
