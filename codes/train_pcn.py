@@ -219,7 +219,7 @@ def test_net(cfg):
 
     test_dataset_loader = utils.data_loaders.DATASET_LOADER_MAPPING[cfg.DATASET.TEST_DATASET](cfg)
 
-    val_data_loader = torch.utils.data.DataLoader(dataset=test_dataset_loader.get_dataset(
+    test_data_loader = torch.utils.data.DataLoader(dataset=test_dataset_loader.get_dataset(
         utils.data_loaders.DatasetSubset.TEST),
                                                   batch_size=1,
                                                   num_workers=cfg.CONST.NUM_WORKERS,
@@ -270,7 +270,7 @@ def test_net(cfg):
     manager = Manager(model, cfg)
 
     # Start training
-    manager.test(cfg, model, val_data_loader, outdir=cfg.DIR.RESULTS if args.output else None)
+    manager.test(cfg, model, test_data_loader, outdir=cfg.DIR.RESULTS if args.output else None)
         
 
 def set_seed(seed):
