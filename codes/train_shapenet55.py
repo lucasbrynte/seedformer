@@ -105,7 +105,6 @@ def ShapeNet55Config():
     __C.TRAIN.LEARNING_RATE                          = 0.001
     __C.TRAIN.LR_DECAY                               = 100
     __C.TRAIN.WARMUP_EPOCHS                          = 20
-    # __C.TRAIN.GAMMA                                  = .5 # Unused remainder from Snowflakenet. Decay factor For StepLR, when performed every 50 batches by SnowflakeNet.
     __C.TRAIN.BETAS                                  = (.9, .999)
     __C.TRAIN.WEIGHT_DECAY                           = 0
 

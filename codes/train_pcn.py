@@ -107,13 +107,8 @@ def PCNConfig():
     __C.TRAIN                                        = edict()
     __C.TRAIN.BATCH_SIZE                             = 48
     __C.TRAIN.N_EPOCHS                               = 400
-    __C.TRAIN.SAVE_FREQ                              = 25
     __C.TRAIN.LEARNING_RATE                          = 0.001
-    # __C.TRAIN.LR_MILESTONES                          = [50, 100, 150, 200, 250] # Appears unused..?
-    # __C.TRAIN.LR_DECAY_STEP                          = 50 # Unused remainder from Snowflakenet. They decayed every 50 epochs, but after the warmup phase, LR scheduler steps are taken only once per epoch.
-    # __C.TRAIN.WARMUP_STEPS                           = 200 # Unused remainder from Snowflakenet. Warmup for 200 "steps" (=batches, BS=80) according to the paper...
     __C.TRAIN.WARMUP_EPOCHS                          = 20
-    # __C.TRAIN.GAMMA                                  = .5 # Unused remainder from Snowflakenet. Decay factor For StepLR, when performed every 50 batches by SnowflakeNet.
     __C.TRAIN.BETAS                                  = (.9, .999)
     __C.TRAIN.WEIGHT_DECAY                           = 0
     # Continuous decay parameter for StepLR scheduler. Meaning: After this #epochs, LR will have decayed to a factor 0.1.
