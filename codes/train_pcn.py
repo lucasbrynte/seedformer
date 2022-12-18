@@ -15,12 +15,14 @@ Date: 2022-5-31
 
 import argparse
 import os
+import random
 import numpy as np
 import torch
 import json
 import time
 from torch.utils.tensorboard import SummaryWriter
 import utils.datasets
+from utils.helpers import set_seed
 from easydict import EasyDict as edict
 from importlib import import_module
 from pprint import pprint
@@ -285,13 +287,6 @@ def test_net(cfg):
     # Start training
     manager.test(cfg, model, test_data_loader, outdir=cfg.DIR.RESULTS if args.output else None)
         
-
-def set_seed(seed):
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-
 
 if __name__ == '__main__':
     # Check python version

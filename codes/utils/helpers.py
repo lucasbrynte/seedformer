@@ -11,6 +11,18 @@ import random
 from models.utils import fps_subsample
 
 
+def set_seed(seed, seed_python=True, seed_numpy=True, seed_pytorch=True):
+    if seed_python:
+        random.seed(seed)
+    if seed_numpy:
+        np.random.seed(seed)
+    if seed_pytorch:
+        torch.manual_seed(seed)
+    # # Legacy pytorch functions for separate GPU seeding:
+    # torch.cuda.manual_seed(seed)
+    # torch.cuda.manual_seed_all(seed)
+
+
 def var_or_cuda(x):
     if torch.cuda.is_available():
         x = x.cuda(non_blocking=True)
