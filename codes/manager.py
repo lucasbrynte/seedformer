@@ -287,7 +287,7 @@ class Manager:
         self.test_record_file.close()
 
 
-    def validate(self, cfg, model=None, val_data_loader=None, outdir=None, tb_writer=None):
+    def validate(self, cfg, model=None, val_data_loader=None, tb_writer=None):
         # Enable the inbuilt cudnn auto-tuner to find the best algorithm to use
         torch.backends.cudnn.benchmark = True
 
