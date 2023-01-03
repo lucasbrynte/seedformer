@@ -185,8 +185,7 @@ def train_net(cfg):
 
     # Create tensorboard writers
     os.makedirs(cfg.DIR.TB, exist_ok=True)
-    train_writer = SummaryWriter(os.path.join(cfg.DIR.TB, 'train'))
-    val_writer = SummaryWriter(os.path.join(cfg.DIR.TB, 'test'))
+    tb_writer = SummaryWriter(os.path.join(cfg.DIR.TB))
 
     #######################
     # Prepare Network Model
@@ -221,7 +220,7 @@ def train_net(cfg):
     manager = Manager(model, cfg)
 
     # Start training
-    manager.train(model, train_data_loader, val_data_loader, cfg, train_writer, val_writer)
+    manager.train(model, train_data_loader, val_data_loader, cfg, tb_writer)
 
 
 def test_net(cfg):
