@@ -139,8 +139,7 @@ class Manager:
         return partial, gt
 
 
-    def train(self, model, train_data_loader, val_data_loader, cfg, tb_writer):
-
+    def train(self, model, train_data_loader, val_data_loaders, cfg, tb_writer):
         init_epoch = 0
         steps = 0
 
@@ -253,33 +252,47 @@ class Manager:
                 (epoch_idx, cfg.TRAIN.N_EPOCHS, learning_rate, epoch_end_time - epoch_start_time, ['%.4f' % l for l in [avg_cdc, avg_cd1, avg_cd2, avg_cd3, avg_partial]]))
 
             # Validate the current model
-            cd_eval = self.validate(cfg, model=model, val_data_loader=val_data_loader, tb_writer=tb_writer)
-            self.train_record('Testing scores = {:.4f}'.format(cd_eval))
+            val_scores = {}
+            for val_data_id, val_data_loader in val_data_loaders.items():
+                val_scores[val_data_id] = self.validate(cfg, model=model, val_data_loader=val_data_loader, val_data_id=val_data_id, tb_writer=tb_writer)
+            if cfg.DATASET.VAL_DATASET is not None:
+                # Validation data exists.
+                main_val_score = val_scores['VAL']
+            elif cfg.DATASET.VALIDATE_ON_TEST:
+                # Use test data instead.
+                main_val_score = val_scores['TEST']
+            elif len(val_scores) == 1:
+                # There is only one validation set, so we can unambiguously determine which dataset to calculate the score on.
+                main_val_score = val_scores[val_data_id]
+            else:
+                # In this case, there is no validation dataset at all, or there are > 1, in which case it is ambiguous from which to determine the main score.
+                main_val_score = None
+            self.train_record('Testing scores = {:.4f}'.format(main_val_score))
 
             # Save checkpoints
-            if epoch_idx % cfg.TRAIN.SAVE_FREQ == 0 or cd_eval < self.best_metrics:
+            if epoch_idx % cfg.TRAIN.SAVE_FREQ == 0 or (main_val_score is not None and main_val_score < self.best_metrics):
                 self.best_epoch = epoch_idx
 
                 file_names = []
                 if epoch_idx % cfg.TRAIN.SAVE_FREQ == 0:
                     file_names.append('ckpt-epoch-%03d.pth' % epoch_idx)
-                if cd_eval < self.best_metrics:
+                if (main_val_score is not None and main_val_score < self.best_metrics):
                     file_names.append('ckpt-best.pth')
 
                 for file_name in file_names:
                     output_path = os.path.join(cfg.DIR.CHECKPOINTS, file_name)
                     torch.save({
                         'epoch_index': epoch_idx,
-                        'best_metrics': cd_eval,
+                        'val_scores': val_scores,
                         'model': model.state_dict()
                     }, output_path)
 
                     print('Saved checkpoint to %s ...' % output_path)
-                if cd_eval < self.best_metrics:
-                    self.best_metrics = cd_eval
+                if (main_val_score is not None and main_val_score < self.best_metrics):
+                    self.best_metrics = main_val_score
 
-            # cd_eval is an ordinary python float, but numpy works fine for NaN detection:
-            assert np.isfinite(cd_eval), 'Encountered NaN validation loss at epoch {}'.format(epoch_idx)
+            # main_val_score is an ordinary python float, but numpy works fine for NaN detection:
+            assert np.isfinite(main_val_score), 'Encountered NaN validation loss at epoch {}'.format(epoch_idx)
 
         # training end
         tb_writer.close()
@@ -287,7 +300,7 @@ class Manager:
         self.test_record_file.close()
 
 
-    def validate(self, cfg, model=None, val_data_loader=None, tb_writer=None):
+    def validate(self, cfg, model=None, val_data_loader=None, val_data_id=None, tb_writer=None):
         # Enable the inbuilt cudnn auto-tuner to find the best algorithm to use
         torch.backends.cudnn.benchmark = True
 
@@ -327,11 +340,12 @@ class Manager:
 
         # Add validation results to TensorBoard
         if tb_writer is not None:
-            tb_writer.add_scalar('Val/Loss/Epoch/cd_pc', test_losses.avg(0), self.epoch)
-            tb_writer.add_scalar('Val/Loss/Epoch/cd_p1', test_losses.avg(1), self.epoch)
-            tb_writer.add_scalar('Val/Loss/Epoch/cd_p2', test_losses.avg(2), self.epoch)
-            tb_writer.add_scalar('Val/Loss/Epoch/cd_p3', test_losses.avg(3), self.epoch)
-            tb_writer.add_scalar('Val/Loss/Epoch/partial_matching', test_losses.avg(4), self.epoch)
+            val_id_str = 'Val_{}'.format(val_data_id) if val_data_id is not None else 'Val'
+            tb_writer.add_scalar('{}/Loss/Epoch/cd_pc'.format(val_id_str), test_losses.avg(0), self.epoch)
+            tb_writer.add_scalar('{}/Loss/Epoch/cd_p1'.format(val_id_str), test_losses.avg(1), self.epoch)
+            tb_writer.add_scalar('{}/Loss/Epoch/cd_p2'.format(val_id_str), test_losses.avg(2), self.epoch)
+            tb_writer.add_scalar('{}/Loss/Epoch/cd_p3'.format(val_id_str), test_losses.avg(3), self.epoch)
+            tb_writer.add_scalar('{}/Loss/Epoch/partial_matching'.format(val_id_str), test_losses.avg(4), self.epoch)
             for i, metric in enumerate(test_metrics.items):
                 try:
                     tb_writer.add_scalar('Metric/%s' % metric, test_metrics.avg(i), self.epoch)

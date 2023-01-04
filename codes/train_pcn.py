@@ -158,11 +158,6 @@ def train_net(cfg):
     ########################
 
     train_data_loader, val_data_loaders = utils.datasets.init_train_val_dataloaders(cfg)
-    assert isinstance(val_data_loaders, dict)
-    if len(val_data_loaders) == 1:
-        val_data_loader = next(iter(val_data_loaders.values()))
-    else:
-        raise NotImplementedError
 
     # Set up folders for logs and checkpoints
     timestr = time.strftime('_Log_%Y_%m_%d_%H_%M_%S', time.localtime())
@@ -220,7 +215,7 @@ def train_net(cfg):
     manager = Manager(model, cfg)
 
     # Start training
-    manager.train(model, train_data_loader, val_data_loader, cfg, tb_writer)
+    manager.train(model, train_data_loader, val_data_loaders, cfg, tb_writer)
 
 
 def test_net(cfg):
