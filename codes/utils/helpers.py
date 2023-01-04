@@ -48,6 +48,22 @@ def count_parameters(network):
     return sum(p.numel() for p in network.parameters())
 
 
+def get_param_groups(model):
+    param_groups = {}
+    param_groups['featext'] = list(model.feat_extractor.parameters())
+    param_groups['seedgen'] = list(model.seed_generator.parameters())
+    for j, curr_uplayer in enumerate(model.up_layers):
+        param_groups['uplayer{}'.format(j)] = list(curr_uplayer.parameters())
+    assert set(model.parameters()) == set().union(*param_groups.values())
+    return param_groups
+
+
+def get_groupwise_flattened_gradients(model):
+    param_groups = get_param_groups(model)
+    flattened_gradients = { key: torch.nn.utils.parameters_to_vector(p.grad for p in param_group) for key, param_group in param_groups.items() }
+    return flattened_gradients
+
+
 def get_ptcloud_img(ptcloud):
     fig = plt.figure(figsize=(8, 8))
 

@@ -132,6 +132,7 @@ def PCNConfig():
     # Continuous decay parameter for StepLR scheduler. Meaning: After this #epochs, LR will have decayed to a factor 0.1.
     # __C.TRAIN.LR_DECAY                               = 100 # NOTE: Seedformer paper states 100 rather than 150, and 100 is used when training on ShapeNet-55.
     __C.TRAIN.LR_DECAY                               = 150
+    __C.TRAIN.LOG_GRADIENTS                          = True # NOTE: 1 percent increase in computation time when activated
 
     #
     # Test

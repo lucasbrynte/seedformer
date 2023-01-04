@@ -145,7 +145,7 @@ class Manager:
 
         # training record file
         print('Training Record:')
-        self.train_record('n_itr, cd_pc, cd_p1, cd_p2, cd_p3, partial_matching')
+        self.train_record('n_itr, cd_pc, cd_p1, cd_p2, cd_p3, partial_matching, grad_tot_absmean, grad_tot_absmax')
         print('Testing Record:')
         self.test_record('#epoch cdc cd1 cd2 partial_matching | cd3 | #best_epoch best_metrics')
 
@@ -218,8 +218,20 @@ class Manager:
                 tb_writer.add_scalar('Train/Loss/Batch/cd_p3', cd_p3_item, n_itr)
                 tb_writer.add_scalar('Train/Loss/Batch/partial_matching', partial_item, n_itr)
 
+                if cfg.TRAIN.LOG_GRADIENTS:
+                    flattened_gradients = utils.helpers.get_groupwise_flattened_gradients(model.module if cfg.PARALLEL.MULTIGPU else model)
+                    for key, flattened_grad in flattened_gradients.items():
+                        tb_writer.add_scalar('Train/Grad/Batch/{}_ABSMEAN'.format(key), torch.mean(torch.abs(flattened_grad)).item(), n_itr)
+                        tb_writer.add_scalar('Train/Grad/Batch/{}_MAX'.format(key), torch.max(flattened_grad).item(), n_itr)
+                    grad_total_absmean = torch.mean(torch.abs(torch.nn.utils.parameters_to_vector(flattened_gradients.values()))).item()
+                    grad_total_absmax = torch.max(torch.abs(torch.nn.utils.parameters_to_vector(flattened_gradients.values()))).item()
+                    tb_writer.add_scalar('Train/Grad/Batch/TOTAL_ABSMEAN'.format(key), grad_total_absmean, n_itr)
+                    tb_writer.add_scalar('Train/Grad/Batch/TOTAL_ABSMAX'.format(key), grad_total_absmax, n_itr)
+
                 # training record
                 message = '{:d} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}'.format(n_itr, cd_pc_item, cd_p1_item, cd_p2_item, cd_p3_item, partial_item)
+                if cfg.TRAIN.LOG_GRADIENTS:
+                    message += ' {:.4f} {:.4f}'.format(grad_total_absmean, grad_total_absmax)
                 self.train_record(message, show_info=False)
 
                 # # For fast debugging: Iterate only 1 batch:
