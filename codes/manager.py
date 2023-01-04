@@ -245,6 +245,7 @@ class Manager:
             tb_writer.add_scalar('Train/Loss/Epoch/cd_p2', avg_cd2, epoch_idx)
             tb_writer.add_scalar('Train/Loss/Epoch/cd_p3', avg_cd3, epoch_idx)
             tb_writer.add_scalar('Train/Loss/Epoch/partial_matching', avg_partial, epoch_idx)
+            tb_writer.add_scalar('Misc/Epoch/learning_rate', learning_rate, epoch_idx)
 
             # Training record
             self.train_record(
