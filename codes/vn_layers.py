@@ -75,20 +75,20 @@ class VNLinearLeakyReLU(nn.Module):
 
 
 class VNLinearAndLeakyReLU(nn.Module):
-    def __init__(self, in_channels, out_channels, dim=5, share_nonlinearity=False, use_batchnorm='norm', negative_slope=0.2):
+    def __init__(self, in_channels, out_channels, dim=5, share_nonlinearity=False, bn_mode='norm', negative_slope=0.2):
         super(VNLinearLeakyReLU, self).__init__()
         self.dim = dim
         self.share_nonlinearity = share_nonlinearity
-        self.use_batchnorm = use_batchnorm
+        self.bn_mode = bn_mode
         self.negative_slope = negative_slope
         
         self.linear = VNLinear(in_channels, out_channels)
         self.leaky_relu = VNLeakyReLU(out_channels, share_nonlinearity=share_nonlinearity, negative_slope=negative_slope)
         
         # BatchNorm
-        self.use_batchnorm = use_batchnorm
-        if use_batchnorm != 'none':
-            self.batchnorm = VNBatchNorm(out_channels, dim=dim, mode=use_batchnorm)
+        self.bn_mode = bn_mode
+        if bn_mode != 'none':
+            self.batchnorm = VNBatchNorm(out_channels, dim=dim, mode=bn_mode)
     
     def forward(self, x):
         '''
@@ -97,7 +97,7 @@ class VNLinearAndLeakyReLU(nn.Module):
         # Conv
         x = self.linear(x)
         # InstanceNorm
-        if self.use_batchnorm != 'none':
+        if self.bn_mode != 'none':
             x = self.batchnorm(x)
         # LeakyReLU
         x_out = self.leaky_relu(x)
