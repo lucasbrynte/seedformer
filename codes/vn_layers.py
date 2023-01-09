@@ -47,21 +47,22 @@ class VNLeakyReLU(nn.Module):
 
 class VNLinearLeakyReLU(nn.Module):
     def __init__(self, in_channels, out_channels, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, v_nonlinearity=True):
-        super(VNLinearLeakyReLU, self).__init__()
+        super().__init__()
         self.dim = dim
         self.negative_slope = negative_slope
         self.v_nonlinearity = v_nonlinearity
-        
+
         self.map_to_feat = nn.Linear(in_channels, out_channels, bias=False)
         if bn:
             self.batchnorm = VNBatchNorm(out_channels, dim=dim)
         self.bn=bn
-        
+
         if share_nonlinearity == True:
             self.map_to_dir = nn.Linear(in_channels, 1, bias=False)
         else:
             self.map_to_dir = nn.Linear(in_channels, out_channels, bias=False)
-    
+
+
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
@@ -73,8 +74,8 @@ class VNLinearLeakyReLU(nn.Module):
             p = self.batchnorm(p)
         if self.v_nonlinearity:
             # LeakyReLU
-            d = self.map_to_dir(x.transpose(1,-1)).transpose(1,-1)
-            dotprod = (p*d).sum(2, keepdims=True)
+            d = self.map_to_dir(x.transpose(1, -1)).transpose(1, -1)
+            dotprod = (p * d).sum(2, keepdims=True)
             mask = (dotprod >= 0).float()
             d_norm_sq = (d*d).sum(2, keepdims=True)
             x_out = self.negative_slope * p + (1-self.negative_slope) * (mask*p + (1-mask)*(p-(dotprod/(d_norm_sq+EPS))*d))
