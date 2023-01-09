@@ -13,12 +13,12 @@ class VNLinear(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(VNLinear, self).__init__()
         self.map_to_feat = nn.Linear(in_channels, out_channels, bias=False)
-    
+
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
-        x_out = self.map_to_feat(x.transpose(1,-1)).transpose(1,-1)
+        x_out = self.map_to_feat(x.transpose(1, -1)).transpose(1, -1)
         return x_out
 
 
@@ -30,16 +30,17 @@ class VNLeakyReLU(nn.Module):
         else:
             self.map_to_dir = nn.Linear(in_channels, in_channels, bias=False)
         self.negative_slope = negative_slope
-    
+
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
-        d = self.map_to_dir(x.transpose(1,-1)).transpose(1,-1)
-        dotprod = (x*d).sum(2, keepdim=True)
+        d = self.map_to_dir(x.transpose(1, -1)).transpose(1, -1)
+        dotprod = (x * d).sum(2, keepdim=True)
         mask = (dotprod >= 0).float()
-        d_norm_sq = (d*d).sum(2, keepdim=True)
-        x_out = self.negative_slope * x + (1-self.negative_slope) * (mask*x + (1-mask)*(x-(dotprod/(d_norm_sq+EPS))*d))
+        d_norm_sq = (d * d).sum(2, keepdim=True)
+        x_out = self.negative_slope * x + (1 - self.negative_slope) * (
+                    mask * x + (1 - mask) * (x - (dotprod / (d_norm_sq + EPS)) * d))
         return x_out
 
 
@@ -62,7 +63,7 @@ class VNLinearLeakyReLU(nn.Module):
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
         # Linear
-        p = self.map_to_feat(x.transpose(1,-1)).transpose(1,-1)
+        p = self.map_to_feat(x.transpose(1, -1)).transpose(1, -1)
         # BatchNorm
         p = self.batchnorm(p)
         # LeakyReLU
@@ -75,21 +76,23 @@ class VNLinearLeakyReLU(nn.Module):
 
 
 class VNLinearAndLeakyReLU(nn.Module):
-    def __init__(self, in_channels, out_channels, dim=5, share_nonlinearity=False, bn_mode='norm', negative_slope=0.2):
+    def __init__(self, in_channels, out_channels, dim=5, share_nonlinearity=False, bn_mode='norm',
+                 negative_slope=0.2):
         super(VNLinearLeakyReLU, self).__init__()
         self.dim = dim
         self.share_nonlinearity = share_nonlinearity
         self.bn_mode = bn_mode
         self.negative_slope = negative_slope
-        
+
         self.linear = VNLinear(in_channels, out_channels)
-        self.leaky_relu = VNLeakyReLU(out_channels, share_nonlinearity=share_nonlinearity, negative_slope=negative_slope)
-        
+        self.leaky_relu = VNLeakyReLU(out_channels, share_nonlinearity=share_nonlinearity,
+                                      negative_slope=negative_slope)
+
         # BatchNorm
         self.bn_mode = bn_mode
         if bn_mode != 'none':
             self.batchnorm = VNBatchNorm(out_channels, dim=dim, mode=bn_mode)
-    
+
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
@@ -112,7 +115,7 @@ class VNBatchNorm(nn.Module):
             self.bn = nn.BatchNorm1d(num_features)
         elif dim == 5:
             self.bn = nn.BatchNorm2d(num_features)
-    
+
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
@@ -127,17 +130,19 @@ class VNBatchNorm(nn.Module):
         return x
 
 
+
+
 class VNMaxPool(nn.Module):
     def __init__(self, in_channels):
         super(VNMaxPool, self).__init__()
         self.map_to_dir = nn.Linear(in_channels, in_channels, bias=False)
-    
+
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
-        d = self.map_to_dir(x.transpose(1,-1)).transpose(1,-1)
-        dotprod = (x*d).sum(2, keepdims=True)
+        d = self.map_to_dir(x.transpose(1, -1)).transpose(1, -1)
+        dotprod = (x * d).sum(2, keepdims=True)
         idx = dotprod.max(dim=-1, keepdim=False)[1]
         index_tuple = torch.meshgrid([torch.arange(j) for j in x.size()[:-1]]) + (idx,)
         x_max = x[index_tuple]
