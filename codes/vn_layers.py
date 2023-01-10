@@ -190,51 +190,96 @@ def mean_pool(x, dim=-1, keepdim=False):
     return x.mean(dim=dim, keepdim=keepdim)
 
 
-class VNStdFeature(nn.Module):
-    def __init__(self, in_channels, dim=4, normalize_frame=False, share_nonlinearity=False, negative_slope=0.2):
-        super(VNStdFeature, self).__init__()
+# NOTE: Invarization layer.
+class VNStdFeature(nn.Module): # also for HNStdFeature
+    '''
+    ver==0: old
+    ver==1: z dir :== mean at N_feat
+    ver==2: length of
+    '''
+    def __init__(self, in_channels, dim=4, normalize_frame=False, share_nonlinearity=False, negative_slope=0.2, ver=0, scale_equivariance=False, reduce_dim2=False, regularize=True): # todo regularize changed 1102
+        super().__init__()
+        self.ver = ver
         self.dim = dim
-        self.normalize_frame = normalize_frame
-        
-        self.vn1 = VNLinearLeakyReLU(in_channels, in_channels//2, dim=dim, share_nonlinearity=share_nonlinearity, negative_slope=negative_slope)
-        self.vn2 = VNLinearLeakyReLU(in_channels//2, in_channels//4, dim=dim, share_nonlinearity=share_nonlinearity, negative_slope=negative_slope)
-        if normalize_frame:
-            self.vn_lin = nn.Linear(in_channels//4, 2, bias=False)
-        else:
-            self.vn_lin = nn.Linear(in_channels//4, 3, bias=False)
-    
-    def forward(self, x):
+        if self.ver==0:
+            self.normalize_frame = normalize_frame
+
+            self.vn1 = VNLinearLeakyReLU(in_channels, in_channels // 2, dim=dim, share_nonlinearity=share_nonlinearity,
+                                         negative_slope=negative_slope)
+            self.vn2 = VNLinearLeakyReLU(in_channels // 2, in_channels // 4, dim=dim, share_nonlinearity=share_nonlinearity,
+                                         negative_slope=negative_slope)
+            if normalize_frame:
+                self.vn_lin = nn.Linear(in_channels // 4, 2, bias=False)
+            else:
+                self.vn_lin = nn.Linear(in_channels // 4, 3, bias=False)
+        self.scale_equivariance=scale_equivariance
+        self.reduce_dim2=reduce_dim2 # only work with ver1
+        self.regularize = regularize
+        if self.scale_equivariance: self.regularize = True
+        self.in_channels = in_channels
+    def forward(self, x, s=None):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
-        z0 = x
-        z0 = self.vn1(z0)
-        z0 = self.vn2(z0)
-        z0 = self.vn_lin(z0.transpose(1, -1)).transpose(1, -1)
-        
-        if self.normalize_frame:
-            # make z0 orthogonal. u2 = v2 - proj_u1(v2)
-            v1 = z0[:,0,:]
-            #u1 = F.normalize(v1, dim=1)
-            v1_norm = torch.sqrt((v1*v1).sum(1, keepdims=True))
-            u1 = v1 / (v1_norm+EPS)
-            v2 = z0[:,1,:]
-            v2 = v2 - (v2*u1).sum(1, keepdims=True)*u1
-            #u2 = F.normalize(u2, dim=1)
-            v2_norm = torch.sqrt((v2*v2).sum(1, keepdims=True))
-            u2 = v2 / (v2_norm+EPS)
+        if self.ver == 0:
+            z0 = x
+            z0 = self.vn1(z0)
+            z0 = self.vn2(z0)
+            z0 = self.vn_lin(z0.transpose(1, -1)).transpose(1, -1)
 
-            # compute the cross product of the two output vectors        
-            u3 = torch.cross(u1, u2)
-            z0 = torch.stack([u1, u2, u3], dim=1).transpose(1, 2)
-        else:
+            if self.normalize_frame:
+                # make z0 orthogonal. u2 = v2 - proj_u1(v2)
+                v1 = z0[:, 0, :]
+                # u1 = F.normalize(v1, dim=1)
+                v1_norm = torch.sqrt((v1 * v1).sum(1, keepdims=True))
+                u1 = v1 / (v1_norm + EPS)
+                v2 = z0[:, 1, :]
+                v2 = v2 - (v2 * u1).sum(1, keepdims=True) * u1
+                # u2 = F.normalize(u2, dim=1)
+                v2_norm = torch.sqrt((v2 * v2).sum(1, keepdims=True))
+                u2 = v2 / (v2_norm + EPS)
+
+                # compute the cross product of the two output vectors
+                u3 = torch.cross(u1, u2)
+                z0 = torch.stack([u1, u2, u3], dim=1).transpose(1, 2)
+            else:
+                z0 = z0.transpose(1, 2)
+        elif self.ver==1:
+            z0 = torch.mean(x, dim=1, keepdim=True)
+            if not self.reduce_dim2: # always
+                shape = x[:, :3, ...].shape
+                z0 = z0.expand(shape)
             z0 = z0.transpose(1, 2)
-        
-        if self.dim == 4:
-            x_std = torch.einsum('bijm,bjkm->bikm', x, z0)
-        elif self.dim == 3:
-            x_std = torch.einsum('bij,bjk->bik', x, z0)
-        elif self.dim == 5:
-            x_std = torch.einsum('bijmn,bjkmn->bikmn', x, z0)
-        
+        # elif self.ver==2: # Not good
+        #     z0 = None
+        #     x_std = torch.sum(torch.pow(x, exponent=2), dim=2, keepdim=True).expand(x.shape).contiguous()
+
+
+        if self.ver==0 or self.ver==1:
+            if self.dim == 4:
+                x_std = torch.einsum('bijm,bjkm->bikm', x, z0)
+            elif self.dim == 3:
+                x_std = torch.einsum('bij,bjk->bik', x, z0)
+            elif self.dim == 5:
+                x_std = torch.einsum('bijmn,bjkmn->bikmn', x, z0)
+
+        if self.regularize:
+            x_std = x_std / (z0.transpose(1,2).norm(p=2, dim=2, keepdim=True) + EPS)
+
+            if self.scale_equivariance:
+                # scale_norm = torch.norm(x_std, p=2, dim=2, keepdim=True).mean(dim=1, keepdim=True) # old no need to take norm if
+                #scale_norm = torch.norm(x_std, p=1, dim=1, keepdim=True) / self.in_channels#.mean(dim=1, keepdim=True)
+                scale_norm = torch.mean(torch.abs(x_std), dim=1, keepdim=True)
+                x_std = x_std / (scale_norm + EPS)
+                # if s is not None:
+                #     s = s / (scale_norm.squeeze(2) + EPS )
+        if self.reduce_dim2:
+            assert self.ver==1
+            x_std = x_std.squeeze(2)
+        if s is not None:
+            assert self.reduce_dim2
+            x_std = torch.cat((x_std, s), dim=1)
         return x_std, z0
+    # ver1 reduce dim2 B,nfeat,1,xxx => B,nfeat,xxx
+    # ver1 not reduce dim2 B,nfeat,3,xxx
+    # ver0 B,nfeat,3,xxx
