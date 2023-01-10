@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 # EPS = 1e-6 # Original (VNN) EPS value
 EPS = 1e-8 # Updated EPS value by GraphONet
-EPS2 = 1e-12 # Secondary EPS value added by GraphONet. For use in VNLinearLeakyReLU.
+EPS2 = 1e-12 # Secondary EPS value added by GraphONet. For use in VNLinearLeakyReLU and HNLinearLeakyReLU.
 
 class VNLinear(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -93,6 +93,95 @@ class VNLinearLeakyReLU(nn.Module):
         else:
             x_out = p
         return x_out
+
+
+class HNLinearLeakyReLU(nn.Module):
+    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, is_s2v=True, bias=False, scale_equivariance=False, v2s_norm=True, p_norm=1, v_nonlinearity=True): # todo v2s_norm true 1102
+        super().__init__()
+        self.dim = dim
+        self.negative_slope = negative_slope
+        self.v_nonlinearity = v_nonlinearity
+
+        self.map_to_feat = nn.Linear(v_in_channels, v_out_channels, bias=False)
+        if bn:
+            self.batchnorm = VNBatchNorm(v_out_channels, dim=dim)
+        self.bn=bn
+        if self.v_nonlinearity:
+            if share_nonlinearity == True:
+                self.map_to_dir = nn.Linear(v_in_channels, 1, bias=False)
+            else:
+                self.map_to_dir = nn.Linear(v_in_channels, v_out_channels, bias=False)
+
+        if s_in_channels > 0:
+            # scalar
+            if s_out_channels > 0:
+                self.ss = nn.Linear(s_in_channels, s_out_channels, bias=True) # todo bias
+            if is_s2v:
+                self.sv = nn.Linear(s_in_channels, v_out_channels, bias=True) # todo bias
+            if bn: # todo xuyaogai
+                self.s_bn = nn.BatchNorm1d(s_out_channels)
+        if s_out_channels > 0:
+            self.v2s = VNStdFeature(v_in_channels, dim=dim, ver=1, reduce_dim2=True, regularize=True, scale_equivariance=scale_equivariance)
+            self.vs = nn.Linear(v_in_channels, s_out_channels, bias=True) # todo bias
+
+        self.s_in_channels = s_in_channels
+        self.s_out_channels = s_out_channels
+        self.v_in_channels = v_in_channels
+        self.v_out_channels = v_out_channels
+
+        self.is_s2v=is_s2v
+        self.v2s_norm = v2s_norm # todo new 1102
+        self.p_norm=p_norm # used in s2v
+
+        self.scale_equivariance = scale_equivariance
+
+
+    def forward(self, x, s=None):
+        '''
+        x: point features of shape [B, N_feat, 3, N_samples, ...]
+        s: scalar point features of shape [B, N_feat, N_samples, ...]
+        '''
+
+        # Linear
+        p = self.map_to_feat(x.transpose(1, -1)).transpose(1, -1)
+
+        if s is not None:
+            if self.is_s2v:
+                sv = self.sv(s.transpose(1, -1)).transpose(1, -1).unsqueeze(2)
+                if self.v2s_norm:
+                    p = p * sv / (sv.norm(p=self.p_norm, dim=1, keepdim=True)/self.v_out_channels + EPS)  # todo if add regularization
+                else:
+                    p = p * sv / ( sv.norm(p=1, dim=1, keepdim=True) + EPS ) # todo if add regularization
+            #p = p * F.sigmoid(sv)
+
+            if self.s_out_channels > 0:
+                ss = self.ss(s.transpose(1, -1)).transpose(1, -1)
+                vs = self.vs(self.v2s(x)[0].transpose(1, -1)).transpose(1, -1)
+                s = F.leaky_relu(ss+vs, self.negative_slope)
+                if self.bn:
+                    s = self.s_bn(s)
+
+        elif self.s_out_channels > 0:
+            vs = self.vs(self.v2s(x)[0].transpose(1, -1)).transpose(1, -1)
+            s = F.leaky_relu(vs, self.negative_slope)
+
+        # BatchNorm
+        if self.bn:
+            p = self.batchnorm(p)
+
+        if self.v_nonlinearity:
+            # LeakyReLU
+            d = self.map_to_dir(x.transpose(1, -1)).transpose(1, -1)
+            d_norm_sq = torch.pow(torch.norm(d, 2, dim=2, keepdim=True), 2)
+            dotprod = (p * d).sum(2, keepdims=True)
+            mask = (dotprod < 0).float()
+            # d_norm_sq = (d * d).sum(2, keepdims=True)
+            # x_out = self.negative_slope * p + (1 - self.negative_slope) * (
+            #             mask * p + (1 - mask) * (p - (dotprod / (d_norm_sq + EPS2)) * d))
+            x_out = p - (mask) * (1 - self.negative_slope) * (dotprod / (d_norm_sq + EPS2)) * d
+        else:
+            x_out = p
+        return x_out, s
 
 
 class VNLinearAndLeakyReLU(nn.Module):
