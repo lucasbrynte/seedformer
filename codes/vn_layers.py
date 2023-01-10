@@ -7,7 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-EPS = 1e-6
+# EPS = 1e-6 # Original (VNN) EPS value
+EPS = 1e-8 # Updated EPS value by GraphONet
 
 class VNLinear(nn.Module):
     def __init__(self, in_channels, out_channels):
