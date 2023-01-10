@@ -77,9 +77,18 @@ class VNLinearLeakyReLU(nn.Module):
             # LeakyReLU
             d = self.map_to_dir(x.transpose(1, -1)).transpose(1, -1)
             dotprod = (p * d).sum(2, keepdims=True)
+
+            # Original VNN code:
             mask = (dotprod >= 0).float()
             d_norm_sq = (d*d).sum(2, keepdims=True)
             x_out = self.negative_slope * p + (1-self.negative_slope) * (mask*p + (1-mask)*(p-(dotprod/(d_norm_sq+EPS))*d))
+
+            # # GraphONet modifications in below comments. Should not have any effect in practice.
+            # # - An inverted "mask" variable is used, and the expression for calculating x_out is simplified, bringing out "p" from all weighted / masked terms.
+            # # - The d_norm_sq calculation is calculated differently, but appears to do the same thing.
+            # mask = (dotprod < 0).float()
+            # d_norm_sq = torch.pow(torch.norm(d, 2, dim=2, keepdim=True),2)
+            # x_out = p - (mask) * (1-self.negative_slope) * (dotprod / (d_norm_sq + EPS)) * d
         else:
             x_out = p
         return x_out
