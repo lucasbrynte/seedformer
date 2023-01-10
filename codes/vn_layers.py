@@ -117,9 +117,10 @@ class VNLinearAndLeakyReLU(nn.Module):
 
 
 class VNBatchNorm(nn.Module):
-    def __init__(self, num_features, dim):
+    def __init__(self, num_features, dim, random_sign_flip=False):
         super(VNBatchNorm, self).__init__()
         self.dim = dim
+        self.random_sign_flip = random_sign_flip
         if dim == 3 or dim == 4:
             self.bn = nn.BatchNorm1d(num_features)
         elif dim == 5:
@@ -130,12 +131,27 @@ class VNBatchNorm(nn.Module):
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
         # norm = torch.sqrt((x*x).sum(2))
+        # norm = torch.norm(x,p=2,dim=2,keepdim=False) # NOTE: This is the norm calculation in the GraphONet implementation. They appear to have removed the EPS addition to the norm, perhaps by accident.
         norm = torch.norm(x, dim=2) + EPS
+
+        if self.random_sign_flip:
+            # Unlike the original VNN, a random sign flip is applied on the vector norms before applying the conventional BN layer.
+            dims = norm.shape
+            mask = torch.randint(0, 2, dims, device=norm.device).float()*2-1
+            norm = norm * mask
+            #norm[..., :norm.shape[-1]//2] = - norm[..., :norm.shape[-1]//2]
+
         norm_bn = self.bn(norm)
         norm = norm.unsqueeze(2)
         norm_bn = norm_bn.unsqueeze(2)
+
+        if self.random_sign_flip:
+            # After the BN layer, take the absolute value after all:
+            norm = torch.abs(norm)
+            norm_bn = torch.abs(norm_bn)
+
         x = x / norm * norm_bn
-        
+
         return x
 
 
