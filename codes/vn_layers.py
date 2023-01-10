@@ -169,8 +169,9 @@ class VNMaxPool(nn.Module):
         d = self.map_to_dir(x.transpose(1, -1)).transpose(1, -1)
         dotprod = (x * d).sum(2, keepdims=True)
         idx = dotprod.max(dim=-1, keepdim=False)[1]
-        index_tuple = torch.meshgrid([torch.arange(j) for j in x.size()[:-1]]) + (idx,)
-        x_max = x[index_tuple]
+        # index_tuple = torch.meshgrid([torch.arange(j) for j in x.size()[:-1]]) + (idx,)
+        # x_max = x[index_tuple]
+        x_max = torch.gather(x, -1, idx.expand(x.shape[:-1]).unsqueeze(-1)).squeeze(-1)
         return x_max
 
 
