@@ -162,13 +162,17 @@ class HNLinearLeakyReLU(nn.Module):
             if self.s_out_channels > 0:
                 ss = self.ss(s.transpose(1, -1)).transpose(1, -1)
                 vs = self.vs(self.v2s(x)[0].transpose(1, -1)).transpose(1, -1)
-                s = F.leaky_relu(ss+vs, self.negative_slope)
+                s_out = F.leaky_relu(ss+vs, self.negative_slope)
                 if self.bn:
-                    s = self.s_bn(s)
-
-        elif self.s_out_channels > 0:
-            vs = self.vs(self.v2s(x)[0].transpose(1, -1)).transpose(1, -1)
-            s = F.leaky_relu(vs, self.negative_slope)
+                    s_out = self.s_bn(s_out)
+            else:
+                s_out = None
+        else:
+            if self.s_out_channels > 0:
+                vs = self.vs(self.v2s(x)[0].transpose(1, -1)).transpose(1, -1)
+                s_out = F.leaky_relu(vs, self.negative_slope)
+            else:
+                s_out = None
 
         # BatchNorm
         if self.bn:
@@ -186,7 +190,7 @@ class HNLinearLeakyReLU(nn.Module):
             x_out = p - (mask) * (1 - self.negative_slope) * (dotprod / (d_norm_sq + EPS2)) * d
         else:
             x_out = p
-        return x_out, s
+        return x_out, s_out
 
 
 class VNLinearAndLeakyReLU(nn.Module):
