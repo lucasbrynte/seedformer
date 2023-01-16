@@ -21,6 +21,7 @@ import json
 import time
 import utils.datasets
 from utils.helpers import set_seed
+from utils.helpers import get_dflt_conf
 from easydict import EasyDict as edict
 from importlib import import_module
 from pprint import pprint
@@ -58,17 +59,8 @@ def ShapeNet55Config():
     # Configuration for PCN
     #######################
 
-    __C                                              = edict()
+    __C                                              = get_dflt_conf()
     cfg                                              = __C
-
-    #
-    # Dataset Config
-    #
-    __C.DATASETS                                     = edict()
-    __C.DATASETS.SHAPENET55                          = edict()
-    __C.DATASETS.SHAPENET55.CATEGORY_FILE_PATH       = './datasets/ShapeNet55-34/ShapeNet-55/'
-    __C.DATASETS.SHAPENET55.N_POINTS                 = 2048
-    __C.DATASETS.SHAPENET55.COMPLETE_POINTS_PATH     = '<*PATH-TO-YOUR-DATASET*>/ShapeNet55/shapenet_pc/%s'
 
     #
     # Dataset
@@ -82,53 +74,14 @@ def ShapeNet55Config():
     __C.DATASET.VALIDATE_ON_TEST                     = True
 
     #
-    # Parallelism
-    #
-    __C.PARALLEL                                        = edict()
-    __C.PARALLEL.NUM_WORKERS                            = 8
-    __C.PARALLEL.MULTIGPU                               = True
-
-    #
-    # Constants
-    #
-    __C.CONST                                        = edict()
-    __C.CONST.N_INPUT_POINTS                         = 2048
-
-    #
-    # Directories
-    #
-
-    __C.DIR                                          = edict()
-    __C.DIR.OUT_PATH                                 = '../results'
-    # __C.DIR.TEST_PATH                                = '../test'
-    __C.DIR.TEST_PATH                                = '../results/test'
-    # __C.CONST.WEIGHTS                                = None # 'ckpt-best.pth'  # specify a path to run test and inference
-
-    #
     # Network
     #
-    __C.NETWORK                                      = edict()
-    __C.NETWORK.UPSAMPLE_FACTORS                     = [1, 4, 4]
+    __C.NETWORK.UPSAMPLE_FACTORS                     = [1, 4, 4] # 512 * (1 * 4 * 4) = 8192 pts
 
     #
     # Train
     #
-    __C.TRAIN                                        = edict()
-    __C.TRAIN.BATCH_SIZE                             = 48
-    __C.TRAIN.N_EPOCHS                               = 400
-    __C.TRAIN.SAVE_FREQ                              = 25
-    __C.TRAIN.LEARNING_RATE                          = 0.001
     __C.TRAIN.LR_DECAY                               = 100
-    __C.TRAIN.WARMUP_EPOCHS                          = 20
-    __C.TRAIN.BETAS                                  = (.9, .999)
-    __C.TRAIN.WEIGHT_DECAY                           = 0
-    __C.TRAIN.LOG_GRADIENTS                          = True # NOTE: 1 percent increase in computation time when activated
-
-    #
-    # Test
-    #
-    __C.TEST                                         = edict()
-    __C.TEST.METRIC_NAME                             = 'ChamferDistance'
 
 
     return cfg

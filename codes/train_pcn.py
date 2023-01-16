@@ -23,6 +23,7 @@ import time
 from torch.utils.tensorboard import SummaryWriter
 import utils.datasets
 from utils.helpers import set_seed
+from utils.helpers import get_dflt_conf
 from easydict import EasyDict as edict
 from importlib import import_module
 from pprint import pprint
@@ -59,25 +60,8 @@ def PCNConfig():
     # Configuration for PCN
     #######################
 
-    __C                                              = edict()
+    __C                                              = get_dflt_conf()
     cfg                                              = __C
-
-    #
-    # Dataset Config
-    #
-    __C.DATASETS                                     = edict()
-    # __C.DATASETS.COMPLETION3D                        = edict()
-    # __C.DATASETS.COMPLETION3D.CATEGORY_FILE_PATH     = './datasets/Completion3D.json'
-    # __C.DATASETS.COMPLETION3D.PARTIAL_POINTS_PATH    = '/path/to/datasets/Completion3D/%s/partial/%s/%s.h5'
-    # __C.DATASETS.COMPLETION3D.COMPLETE_POINTS_PATH   = '/path/to/datasets/Completion3D/%s/gt/%s/%s.h5'
-    __C.DATASETS.SHAPENET                            = edict()
-    __C.DATASETS.SHAPENET.CATEGORY_FILE_PATH         = './datasets/ShapeNet.json'
-    __C.DATASETS.SHAPENET.N_RENDERINGS               = 8
-    __C.DATASETS.SHAPENET.N_POINTS                   = 2048
-    __C.DATASETS.SHAPENET.PARTIAL_POINTS_PATH        = '/data/PCN/%s/partial/%s/%s/%02d.pcd'
-    __C.DATASETS.SHAPENET.COMPLETE_POINTS_PATH       = '/data/PCN/%s/complete/%s/%s.pcd'
-    # __C.DATASETS.SHAPENET.PARTIAL_POINTS_PATH        = '<*PATH-TO-YOUR-DATASET*>/PCN/%s/partial/%s/%s/%02d.pcd'
-    # __C.DATASETS.SHAPENET.COMPLETE_POINTS_PATH       = '<*PATH-TO-YOUR-DATASET*>/PCN/%s/complete/%s/%s.pcd'
 
     #
     # Dataset
@@ -90,49 +74,15 @@ def PCNConfig():
     __C.DATASET.VALIDATE_ON_TEST                     = False
 
     #
-    # Parallelism
-    #
-    __C.PARALLEL                                        = edict()
-    __C.PARALLEL.NUM_WORKERS                            = 8
-    __C.PARALLEL.MULTIGPU                               = True
-
-    #
-    # Constants
-    #
-    __C.CONST                                        = edict()
-    __C.CONST.N_INPUT_POINTS                         = 2048
-
-    #
-    # Directories
-    #
-
-    __C.DIR                                          = edict()
-    __C.DIR.OUT_PATH                                 = '../results'
-    # __C.DIR.TEST_PATH                                = '../test'
-    __C.DIR.TEST_PATH                                = '../results/test'
-    # __C.CONST.WEIGHTS                                = None # 'ckpt-best.pth'  # specify a path to run test and inference
-
-    #
     # Network
     #
-    __C.NETWORK                                      = edict()
-    __C.NETWORK.UPSAMPLE_FACTORS                     = [1, 4, 8] # 16384
+    __C.NETWORK.UPSAMPLE_FACTORS                     = [1, 4, 8] # 512 * (1 * 4 * 8) = 16384 pts
 
     #
     # Train
     #
-    __C.TRAIN                                        = edict()
-    __C.TRAIN.BATCH_SIZE                             = 48
-    __C.TRAIN.N_EPOCHS                               = 400
-    __C.TRAIN.SAVE_FREQ                              = 25
-    __C.TRAIN.LEARNING_RATE                          = 0.001
-    __C.TRAIN.WARMUP_EPOCHS                          = 20
-    __C.TRAIN.BETAS                                  = (.9, .999)
-    __C.TRAIN.WEIGHT_DECAY                           = 0
-    # Continuous decay parameter for StepLR scheduler. Meaning: After this #epochs, LR will have decayed to a factor 0.1.
     # __C.TRAIN.LR_DECAY                               = 100 # NOTE: Seedformer paper states 100 rather than 150, and 100 is used when training on ShapeNet-55.
     __C.TRAIN.LR_DECAY                               = 150
-    __C.TRAIN.LOG_GRADIENTS                          = True # NOTE: 1 percent increase in computation time when activated
 
     #
     # Test
