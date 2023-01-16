@@ -80,7 +80,7 @@ class MLP(nn.Module):
 
 
 class MLP_CONV(nn.Module):
-    def __init__(self, in_channel, layer_dims, bn=None):
+    def __init__(self, in_channel, layer_dims, bn=False):
         super(MLP_CONV, self).__init__()
         layers = []
         last_channel = in_channel
