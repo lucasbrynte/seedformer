@@ -135,6 +135,11 @@ class HNLinearLeakyReLU(nn.Module):
 
         self.scale_equivariance = scale_equivariance
 
+        assert self.v_in_channels > 0, 'A non-trivial group-action on the input, in particular v_in_channels > 0, is required for any non-trivial (non-invariant) equivariant layer. While we could implement a rotation-invariant scalar->scalar layer, this might as well be done by an ordinary (point-wise) linear layer.'
+
+        if not self.s_in_channels > 0 or not self.v_out_channels > 0:
+            assert not self.is_s2v
+
 
     def forward(self, x, s=None):
         '''
