@@ -122,6 +122,7 @@ def ShapeNet55Config():
     __C.TRAIN.WARMUP_EPOCHS                          = 20
     __C.TRAIN.BETAS                                  = (.9, .999)
     __C.TRAIN.WEIGHT_DECAY                           = 0
+    __C.TRAIN.LOG_GRADIENTS                          = True # NOTE: 1 percent increase in computation time when activated
 
     #
     # Test
