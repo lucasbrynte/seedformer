@@ -48,11 +48,11 @@ class VNLeakyReLU(nn.Module):
 
 
 class VNLinearLeakyReLU(nn.Module):
-    def __init__(self, in_channels, out_channels, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, v_nonlinearity=True):
+    def __init__(self, in_channels, out_channels, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, apply_leaky_relu=True):
         super().__init__()
         self.dim = dim
         self.negative_slope = negative_slope
-        self.v_nonlinearity = v_nonlinearity
+        self.apply_leaky_relu = apply_leaky_relu
 
         self.map_to_feat = nn.Linear(in_channels, out_channels, bias=False)
         if bn:
@@ -74,7 +74,7 @@ class VNLinearLeakyReLU(nn.Module):
         # BatchNorm
         if self.bn:
             p = self.batchnorm(p)
-        if self.v_nonlinearity:
+        if self.apply_leaky_relu:
             # LeakyReLU
             d = self.map_to_dir(x.transpose(1, -1)).transpose(1, -1)
             dotprod = (p * d).sum(2, keepdims=True)
@@ -96,17 +96,17 @@ class VNLinearLeakyReLU(nn.Module):
 
 
 class HNLinearLeakyReLU(nn.Module):
-    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, is_s2v=True, bias=True, scale_equivariance=False, s2v_norm_averaged_wrt_channels=True, s2v_norm_p=1, v_nonlinearity=True):
+    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, is_s2v=True, bias=True, scale_equivariance=False, s2v_norm_averaged_wrt_channels=True, s2v_norm_p=1, apply_leaky_relu=True):
         super().__init__()
         self.dim = dim
         self.negative_slope = negative_slope
-        self.v_nonlinearity = v_nonlinearity
+        self.apply_leaky_relu = apply_leaky_relu
 
         self.map_to_feat = nn.Linear(v_in_channels, v_out_channels, bias=False)
         if bn:
             self.batchnorm = VNBatchNorm(v_out_channels, dim=dim)
         self.bn=bn
-        if self.v_nonlinearity:
+        if self.apply_leaky_relu:
             if share_nonlinearity == True:
                 self.map_to_dir = nn.Linear(v_in_channels, 1, bias=False)
             else:
@@ -166,7 +166,9 @@ class HNLinearLeakyReLU(nn.Module):
             if self.s_out_channels > 0:
                 ss = self.ss(s.transpose(1, -1)).transpose(1, -1)
                 vs = self.vs(self.v2s(x)[0].transpose(1, -1)).transpose(1, -1)
-                s_out = F.leaky_relu(ss+vs, self.negative_slope)
+                s_out = ss + vs
+                if self.apply_leaky_relu:
+                    s_out = F.leaky_relu(s_out, self.negative_slope)
                 if self.bn:
                     s_out = self.s_bn(s_out)
             else:
@@ -174,7 +176,9 @@ class HNLinearLeakyReLU(nn.Module):
         else:
             if self.s_out_channels > 0:
                 vs = self.vs(self.v2s(x)[0].transpose(1, -1)).transpose(1, -1)
-                s_out = F.leaky_relu(vs, self.negative_slope)
+                s_out = vs
+                if self.apply_leaky_relu:
+                    s_out = F.leaky_relu(s_out, self.negative_slope)
             else:
                 s_out = None
 
@@ -182,7 +186,7 @@ class HNLinearLeakyReLU(nn.Module):
         if self.bn:
             p = self.batchnorm(p)
 
-        if self.v_nonlinearity:
+        if self.apply_leaky_relu:
             # LeakyReLU
             d = self.map_to_dir(x.transpose(1, -1)).transpose(1, -1)
             d_norm_sq = torch.pow(torch.norm(d, 2, dim=2, keepdim=True), 2)
