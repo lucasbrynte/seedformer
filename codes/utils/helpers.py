@@ -73,6 +73,9 @@ def get_dflt_conf():
     #
     __C.NETWORK                                      = edict()
     __C.NETWORK.UPSAMPLE_FACTORS                     = [1, 4, 8] # 16384
+    __C.NETWORK.ATTN_CHANNEL                         = '2'
+    __C.NETWORK.POS_FEATURES_FEAT_EXTRACTOR          = 'abs'
+    __C.NETWORK.POS_FEATURES_UP_LAYERS               = 'abs'
 
 
     ####################################################################
