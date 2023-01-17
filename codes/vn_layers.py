@@ -96,11 +96,13 @@ class VNLinearLeakyReLU(nn.Module):
 
 
 class HNLinearLeakyReLU(nn.Module):
-    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, is_s2v=True, bias=True, scale_equivariance=False, s2v_norm_averaged_wrt_channels=True, s2v_norm_p=1, apply_leaky_relu=True):
+    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, bias=True, scale_equivariance=False, s2v_norm_averaged_wrt_channels=True, s2v_norm_p=1, apply_leaky_relu=True):
         super().__init__()
         self.dim = dim
         self.negative_slope = negative_slope
         self.apply_leaky_relu = apply_leaky_relu
+
+        self.is_s2v = self.s_in_channels > 0 and self.v_out_channels > 0
 
         self.map_to_feat = nn.Linear(v_in_channels, v_out_channels, bias=False)
         if bn:
@@ -116,7 +118,7 @@ class HNLinearLeakyReLU(nn.Module):
             # scalar
             if s_out_channels > 0:
                 self.ss = nn.Linear(s_in_channels, s_out_channels, bias=bias)
-            if is_s2v:
+            if self.is_s2v:
                 self.sv = nn.Linear(s_in_channels, v_out_channels, bias=bias)
             if bn: # todo xuyaogai
                 self.s_bn = nn.BatchNorm1d(s_out_channels)
@@ -129,7 +131,6 @@ class HNLinearLeakyReLU(nn.Module):
         self.v_in_channels = v_in_channels
         self.v_out_channels = v_out_channels
 
-        self.is_s2v = is_s2v
         if self.is_s2v:
             self.s2v_norm_averaged_wrt_channels = s2v_norm_averaged_wrt_channels
             self.s2v_norm_p = s2v_norm_p
@@ -137,9 +138,6 @@ class HNLinearLeakyReLU(nn.Module):
         self.scale_equivariance = scale_equivariance
 
         assert self.v_in_channels > 0, 'A non-trivial group-action on the input, in particular v_in_channels > 0, is required for any non-trivial (non-invariant) equivariant layer. While we could implement a rotation-invariant scalar->scalar layer, this might as well be done by an ordinary (point-wise) linear layer.'
-
-        if not self.s_in_channels > 0 or not self.v_out_channels > 0:
-            assert not self.is_s2v
 
 
     def forward(self, x, s=None):
