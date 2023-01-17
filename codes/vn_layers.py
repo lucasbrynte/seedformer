@@ -157,7 +157,7 @@ class HNLinearLeakyReLU(nn.Module):
                 if self.s2v_norm_averaged_wrt_channels:
                     p = p * sv / (sv.norm(p=self.s2v_norm_p, dim=1, keepdim=True) / self.v_out_channels + EPS)
                 else:
-                    p = p * sv / (sv.norm(p=1, dim=1, keepdim=True) + EPS)
+                    p = p * sv / (sv.norm(p=self.s2v_norm_p, dim=1, keepdim=True)                       + EPS)
             #p = p * F.sigmoid(sv)
 
             if self.s_out_channels > 0:
