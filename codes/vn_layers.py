@@ -153,6 +153,9 @@ class HNLinearLeakyReLU(nn.Module):
 
         if s is not None:
             if self.is_s2v:
+                # NOTE: sv maps scalar to scalars.
+                # - This vector of scalars is then normalized with its absolute sum or absolute mean (depending on s2v_norm_averaged_wrt_channels). (absolute values assuming s2v_norm_p=1)
+                # - Next, these scalars are multiplicated with corresponding output vector features p, effectively scaling them.
                 sv = self.sv(s.transpose(1, -1)).transpose(1, -1).unsqueeze(2)
                 if self.s2v_norm_averaged_wrt_channels:
                     p = p * sv / (sv.norm(p=self.s2v_norm_p, dim=1, keepdim=True) / self.v_out_channels + EPS)
