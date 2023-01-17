@@ -96,7 +96,7 @@ class VNLinearLeakyReLU(nn.Module):
 
 
 class HNLinearLeakyReLU(nn.Module):
-    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, is_s2v=True, bias=False, scale_equivariance=False, s2v_norm_averaged_wrt_channels=True, s2v_norm_p=1, v_nonlinearity=True):
+    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, is_s2v=True, bias=True, scale_equivariance=False, s2v_norm_averaged_wrt_channels=True, s2v_norm_p=1, v_nonlinearity=True):
         super().__init__()
         self.dim = dim
         self.negative_slope = negative_slope
@@ -115,14 +115,14 @@ class HNLinearLeakyReLU(nn.Module):
         if s_in_channels > 0:
             # scalar
             if s_out_channels > 0:
-                self.ss = nn.Linear(s_in_channels, s_out_channels, bias=True) # todo bias
+                self.ss = nn.Linear(s_in_channels, s_out_channels, bias=bias)
             if is_s2v:
-                self.sv = nn.Linear(s_in_channels, v_out_channels, bias=True) # todo bias
+                self.sv = nn.Linear(s_in_channels, v_out_channels, bias=bias)
             if bn: # todo xuyaogai
                 self.s_bn = nn.BatchNorm1d(s_out_channels)
         if s_out_channels > 0:
             self.v2s = VNStdFeature(v_in_channels, dim=dim, ver=1, reduce_dim2=True, regularize=True, scale_equivariance=scale_equivariance)
-            self.vs = nn.Linear(v_in_channels, s_out_channels, bias=True) # todo bias
+            self.vs = nn.Linear(v_in_channels, s_out_channels, bias=bias)
 
         self.s_in_channels = s_in_channels
         self.s_out_channels = s_out_channels
