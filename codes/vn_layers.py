@@ -129,9 +129,10 @@ class HNLinearLeakyReLU(nn.Module):
         self.v_in_channels = v_in_channels
         self.v_out_channels = v_out_channels
 
-        self.is_s2v=is_s2v
-        self.v2s_norm = v2s_norm # todo new 1102
-        self.p_norm=p_norm # used in s2v
+        self.is_s2v = is_s2v
+        if self.is_s2v:
+            self.v2s_norm = v2s_norm
+            self.p_norm = p_norm
 
         self.scale_equivariance = scale_equivariance
 
