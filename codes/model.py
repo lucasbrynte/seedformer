@@ -21,19 +21,21 @@ from models.utils import vTransformer, PointNet_SA_Module_KNN, MLP_Res, MLP_CONV
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, out_dim=1024, n_knn=20, pos_features='abs'):
+    def __init__(self, out_dim=1024, n_knn=20, pos_features='abs', vnn_cfg=None):
         """Encoder that encodes information of partial point cloud
         """
         super(FeatureExtractor, self).__init__()
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            raise NotImplementedError
         assert pos_features in ['abs', 'rel', 'none']
         self._pos_features = pos_features
 
         in_channel = 3 if self._pos_features in ['abs', 'rel'] else 0
-        self.sa_module_1 = PointNet_SA_Module_KNN(512, 16, in_channel, [64, 128], group_all=False, if_bn=False, if_idx=True)
-        self.transformer_1 = vTransformer(128, dim=64, n_knn=n_knn)
-        self.sa_module_2 = PointNet_SA_Module_KNN(128, 16, 128, [128, 256], group_all=False, if_bn=False, if_idx=True)
-        self.transformer_2 = vTransformer(256, dim=64, n_knn=n_knn)
-        self.sa_module_3 = PointNet_SA_Module_KNN(None, None, 256, [512, out_dim], group_all=True, if_bn=False)
+        self.sa_module_1 = PointNet_SA_Module_KNN(512, 16, in_channel, [64, 128], group_all=False, if_bn=False, if_idx=True, vnn_cfg=vnn_cfg)
+        self.transformer_1 = vTransformer(128, dim=64, n_knn=n_knn, vnn_cfg=vnn_cfg)
+        self.sa_module_2 = PointNet_SA_Module_KNN(128, 16, 128, [128, 256], group_all=False, if_bn=False, if_idx=True, vnn_cfg=vnn_cfg)
+        self.transformer_2 = vTransformer(256, dim=64, n_knn=n_knn, vnn_cfg=vnn_cfg)
+        self.sa_module_3 = PointNet_SA_Module_KNN(None, None, 256, [512, out_dim], group_all=True, if_bn=False, vnn_cfg=vnn_cfg)
 
     def forward(self, partial_cloud):
         """
@@ -63,9 +65,11 @@ class FeatureExtractor(nn.Module):
 
 
 class SeedGenerator(nn.Module):
-    def __init__(self, feat_dim=512, seed_dim=128, n_knn=20, factor=2, attn_channel=True):
+    def __init__(self, feat_dim=512, seed_dim=128, n_knn=20, factor=2, attn_channel=True, vnn_cfg=None):
         super(SeedGenerator, self).__init__()
-        self.uptrans = UpTransformer(256, 128, dim=64, n_knn=n_knn, use_upfeat=False, attn_channel=attn_channel, up_factor=factor, scale_layer=None)
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            raise NotImplementedError
+        self.uptrans = UpTransformer(256, 128, dim=64, n_knn=n_knn, use_upfeat=False, attn_channel=attn_channel, up_factor=factor, scale_layer=None, vnn_cfg=vnn_cfg)
         self.mlp_1 = MLP_Res(in_dim=feat_dim + 128, hidden_dim=128, out_dim=128)
         self.mlp_2 = MLP_Res(in_dim=128, hidden_dim=64, out_dim=128)
         self.mlp_3 = MLP_Res(in_dim=feat_dim + 128, hidden_dim=128, out_dim=seed_dim)
@@ -92,8 +96,10 @@ class SeedGenerator(nn.Module):
 
 class UpTransformer(nn.Module):
     def __init__(self, in_channel, out_channel, dim, n_knn=20, up_factor=2, use_upfeat=True, 
-                 pos_hidden_dim=64, attn_hidden_multiplier=4, scale_layer=nn.Softmax, attn_channel=True):
+                 pos_hidden_dim=64, attn_hidden_multiplier=4, scale_layer=nn.Softmax, attn_channel=True, vnn_cfg=None):
         super(UpTransformer, self).__init__()
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            raise NotImplementedError
         self.n_knn = n_knn
         self.up_factor = up_factor if up_factor is not None else 1
         self.use_upfeat = use_upfeat
@@ -187,8 +193,10 @@ class UpLayer(nn.Module):
     """
     Upsample Layer with upsample transformers
     """
-    def __init__(self, dim, seed_dim, up_factor=2, i=0, radius=1, n_knn=20, interpolate='three', attn_channel='2', pos_features='abs'):
+    def __init__(self, dim, seed_dim, up_factor=2, i=0, radius=1, n_knn=20, interpolate='three', attn_channel='2', pos_features='abs', vnn_cfg=None):
         super(UpLayer, self).__init__()
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            raise NotImplementedError
         assert attn_channel in ['1', '2', 'both', 'none']
         self.i = i
         self.up_factor = up_factor
@@ -214,8 +222,8 @@ class UpLayer(nn.Module):
         # NOTE! 2 st upsample transformers stackade i varje upsample layer, varav endast den senare genomför uppsampling.
         # Inte nog med det! Den första gör aldrig "point-wise attention", även om så skulle vara confat! Medvetet eller inte..?
 
-        self.uptrans1 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel in ['1', 'both'], up_factor=None)
-        self.uptrans2 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel in ['2', 'both'], up_factor=self.up_factor)
+        self.uptrans1 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel in ['1', 'both'], up_factor=None, vnn_cfg=vnn_cfg)
+        self.uptrans2 = UpTransformer(dim, dim, dim=64, n_knn=self.n_knn, use_upfeat=True, attn_channel=attn_channel in ['2', 'both'], up_factor=self.up_factor, vnn_cfg=vnn_cfg)
 
         self.mlp_delta_feature = MLP_Res(in_dim=dim*2, hidden_dim=dim, out_dim=dim)
 
@@ -294,7 +302,7 @@ class SeedFormer(nn.Module):
     """
     SeedFormer Point Cloud Completion with Patch Seeds and Upsample Transformer
     """
-    def __init__(self, feat_dim=512, embed_dim=128, num_p0=512, n_knn=20, radius=1, up_factors=None, seed_factor=2, interpolate='three', attn_channel='2', pos_features_feat_extractor='abs', pos_features_up_layers='abs'):
+    def __init__(self, feat_dim=512, embed_dim=128, num_p0=512, n_knn=20, radius=1, up_factors=None, seed_factor=2, interpolate='three', attn_channel='2', pos_features_feat_extractor='abs', pos_features_up_layers='abs', vnn_cfg=None):
         """
         Args:
             feat_dim: dimension of global feature
@@ -306,19 +314,21 @@ class SeedFormer(nn.Module):
             attn_channel: transformer self-attention dimension (channel/point)
         """
         super(SeedFormer, self).__init__()
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            raise NotImplementedError
         assert attn_channel in ['1', '2', 'both', 'none']
         self.num_p0 = num_p0
 
         # Seed Generator
-        self.feat_extractor = FeatureExtractor(out_dim=feat_dim, n_knn=n_knn, pos_features=pos_features_feat_extractor)
+        self.feat_extractor = FeatureExtractor(out_dim=feat_dim, n_knn=n_knn, pos_features=pos_features_feat_extractor, vnn_cfg=vnn_cfg)
         # SeedGenerator has only one UpTransformer layer. Let's apply attn_channel unless specified as 'none':
-        self.seed_generator = SeedGenerator(feat_dim=feat_dim, seed_dim=embed_dim, n_knn=n_knn, factor=seed_factor, attn_channel=attn_channel in ['1', '2', 'both'])
+        self.seed_generator = SeedGenerator(feat_dim=feat_dim, seed_dim=embed_dim, n_knn=n_knn, factor=seed_factor, attn_channel=attn_channel in ['1', '2', 'both'], vnn_cfg=vnn_cfg)
 
         # Upsample layers
         up_layers = []
         for i, factor in enumerate(up_factors):
             up_layers.append(UpLayer(dim=embed_dim, seed_dim=embed_dim, up_factor=factor, i=i, n_knn=n_knn, radius=radius, 
-                             interpolate=interpolate, attn_channel=attn_channel, pos_features=pos_features_up_layers))
+                             interpolate=interpolate, attn_channel=attn_channel, pos_features=pos_features_up_layers, vnn_cfg=vnn_cfg))
         self.up_layers = nn.ModuleList(up_layers)
 
     def forward(self, partial_cloud):

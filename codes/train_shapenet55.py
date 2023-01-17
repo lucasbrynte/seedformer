@@ -136,6 +136,7 @@ def train_net(cfg):
         pos_features_feat_extractor = cfg.NETWORK.POS_FEATURES_FEAT_EXTRACTOR,
         pos_features_up_layers = cfg.NETWORK.POS_FEATURES_UP_LAYERS,
         up_factors = cfg.NETWORK.UPSAMPLE_FACTORS,
+        vnn_cfg = cfg.NETWORK.VNN,
     )
     #print(model)
     if cfg.PARALLEL.MULTIGPU:

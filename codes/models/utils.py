@@ -204,7 +204,8 @@ class PointNet_SA_Module(nn.Module):
                  mlp,
                  if_bn=True,
                  group_all=False,
-                 use_xyz=True):
+                 use_xyz=True,
+                 vnn_cfg=None):
         """
         Args:
             npoint: int, number of points to sample
@@ -214,6 +215,9 @@ class PointNet_SA_Module(nn.Module):
             mlp: list of int,
         """
         super(PointNet_SA_Module, self).__init__()
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            # NOTE: This need not be implemented either, as it is not used by SeedFormer.
+            raise NotImplementedError
         self.npoint = npoint
         self.nsample = nsample
         self.radius = radius
@@ -262,7 +266,8 @@ class PointNet_FP_Module(nn.Module):
                  mlp,
                  use_points1=False,
                  in_channel_points1=None,
-                 if_bn=True):
+                 if_bn=True,
+                 vnn_cfg=None):
         """
         Args:
             in_channel: int, input channel of points2
@@ -271,6 +276,9 @@ class PointNet_FP_Module(nn.Module):
             in_channel_points1: int, input channel of points1
         """
         super(PointNet_FP_Module, self).__init__()
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            # NOTE: This need not be implemented either, as it is not used by SeedFormer.
+            raise NotImplementedError
         self.use_points1 = use_points1
 
         if use_points1:
@@ -399,7 +407,8 @@ class PointNet_SA_Module_KNN(nn.Module):
                  if_bn=True,
                  group_all=False,
                  use_xyz=True,
-                 if_idx=False):
+                 if_idx=False,
+                 vnn_cfg=None):
         """
         Args:
             npoint: int, number of points to sample
@@ -409,6 +418,8 @@ class PointNet_SA_Module_KNN(nn.Module):
             mlp: list of int,
         """
         super(PointNet_SA_Module_KNN, self).__init__()
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            raise NotImplementedError
         self.npoint = npoint
         self.nsample = nsample
         self.mlp = mlp
@@ -524,8 +535,11 @@ class vTransformer(nn.Module):
                  dim=256,
                  n_knn=16,
                  pos_hidden_dim=64,
-                 attn_hidden_multiplier=4):
+                 attn_hidden_multiplier=4,
+                 vnn_cfg=None):
         super(vTransformer, self).__init__()
+        if vnn_cfg is not None and vnn_cfg.ENABLED:
+            raise NotImplementedError
         self.n_knn = n_knn
         self.conv_key = nn.Conv1d(dim, dim, 1)
         self.conv_query = nn.Conv1d(dim, dim, 1)

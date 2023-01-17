@@ -76,6 +76,7 @@ def get_dflt_conf():
     __C.NETWORK.ATTN_CHANNEL                         = '2'
     __C.NETWORK.POS_FEATURES_FEAT_EXTRACTOR          = 'abs'
     __C.NETWORK.POS_FEATURES_UP_LAYERS               = 'abs'
+    __C.NETWORK.VNN                                  = None
 
 
     ####################################################################
