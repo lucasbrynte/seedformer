@@ -96,7 +96,7 @@ class VNLinearLeakyReLU(nn.Module):
 
 
 class HNLinearLeakyReLU(nn.Module):
-    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, is_s2v=True, bias=False, scale_equivariance=False, v2s_norm=True, p_norm=1, v_nonlinearity=True): # todo v2s_norm true 1102
+    def __init__(self, v_in_channels, v_out_channels, s_in_channels=0, s_out_channels=0, dim=5, share_nonlinearity=False, negative_slope=0.2, bn=False, is_s2v=True, bias=False, scale_equivariance=False, s2v_norm_averaged_wrt_channels=True, s2v_norm_p=1, v_nonlinearity=True):
         super().__init__()
         self.dim = dim
         self.negative_slope = negative_slope
@@ -131,8 +131,8 @@ class HNLinearLeakyReLU(nn.Module):
 
         self.is_s2v = is_s2v
         if self.is_s2v:
-            self.v2s_norm = v2s_norm
-            self.p_norm = p_norm
+            self.s2v_norm_averaged_wrt_channels = s2v_norm_averaged_wrt_channels
+            self.s2v_norm_p = s2v_norm_p
 
         self.scale_equivariance = scale_equivariance
 
@@ -154,10 +154,10 @@ class HNLinearLeakyReLU(nn.Module):
         if s is not None:
             if self.is_s2v:
                 sv = self.sv(s.transpose(1, -1)).transpose(1, -1).unsqueeze(2)
-                if self.v2s_norm:
-                    p = p * sv / (sv.norm(p=self.p_norm, dim=1, keepdim=True)/self.v_out_channels + EPS)  # todo if add regularization
+                if self.s2v_norm_averaged_wrt_channels:
+                    p = p * sv / (sv.norm(p=self.s2v_norm_p, dim=1, keepdim=True) / self.v_out_channels + EPS)
                 else:
-                    p = p * sv / ( sv.norm(p=1, dim=1, keepdim=True) + EPS ) # todo if add regularization
+                    p = p * sv / (sv.norm(p=1, dim=1, keepdim=True) + EPS)
             #p = p * F.sigmoid(sv)
 
             if self.s_out_channels > 0:
