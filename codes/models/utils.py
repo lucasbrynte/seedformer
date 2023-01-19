@@ -3,6 +3,7 @@ import torch
 from torch import nn, einsum
 from pointnet2_ops.pointnet2_utils import furthest_point_sample, \
     gather_operation, ball_query, three_nn, three_interpolate, grouping_operation
+from models.vn_layers import HNLinearLeakyReLU, calc_n_vector_and_scalar_channels
 
 
 class Conv1d(nn.Module):
@@ -113,6 +114,68 @@ class MLP_Res(nn.Module):
         """
         shortcut = self.conv_shortcut(x)
         out = self.conv_2(torch.relu(self.conv_1(x))) + shortcut
+        return out
+
+
+class MLP_VNN(nn.Module):
+    """
+    Equivariant VNN-based alternative to the MLP_CONV block.
+    """
+    def __init__(self, vector_dim, v_in_channel, hidden_channels, v_out_channel, s_in_channel=0, s_out_channel=0, s_hidden_channel_frac=0.5, count_vector_channel_as_single_channel=False, bn=False, hybrid_feature_layer_settings={}):
+        super(MLP_VNN, self).__init__()
+        if bn:
+            # NOTE:
+            # - Simply avoid running any experiments with VNN BN layers for now, as we are not convinced how stable / suitable they are.
+            # - We may try out BN in the future, but want to avoid doing so by accident.
+            raise NotImplementedError
+        layers = []
+        v_last_channel, s_last_channel = v_in_channel, s_in_channel
+        for next_channel in hidden_channels[:-1]:
+            v_next_channel, s_next_channel = calc_n_vector_and_scalar_channels(next_channel, vector_dim, s_channel_frac=s_hidden_channel_frac, count_vector_channel_as_single_channel=count_vector_channel_as_single_channel)
+
+            layers.append(HNLinearLeakyReLU(v_last_channel, v_next_channel, s_in_channels=s_last_channel, s_out_channels=s_next_channel, bn=bn, apply_leaky_relu=True, **hybrid_feature_layer_settings))
+            v_last_channel, s_last_channel = v_next_channel, s_next_channel
+            # Pre-VNN code (from MLP_CONV):
+            # layers.append(nn.Conv1d(last_channel, next_channel, 1))
+            # if bn:
+            #     layers.append(nn.BatchNorm1d(next_channel))
+            # layers.append(nn.ReLU())
+            # last_channel = next_channel
+        layers.append(HNLinearLeakyReLU(v_last_channel, v_out_channel, s_in_channels=s_last_channel, s_out_channels=s_out_channel, bn=False, apply_leaky_relu=False, **hybrid_feature_layer_settings))
+        # Pre-VNN code (from MLP_CONV):
+        # layers.append(nn.Conv1d(last_channel, hidden_channels[-1], 1))
+        self.mlp = nn.Sequential(*layers)
+
+    def forward(self, inputs):
+        return self.mlp(inputs)
+
+
+class MLP_VNN_Res(nn.Module):
+    """
+    Equivariant VNN-based alternative to the MLP_Res block.
+    """
+    def __init__(self, vector_dim, v_in_channel, v_out_channel, hidden_channel=None, s_in_channel=0, s_out_channel=0, s_hidden_channel_frac=0.5, count_vector_channel_as_single_channel=False, hybrid_feature_layer_settings={}):
+        super(MLP_VNN_Res, self).__init__()
+        if hidden_channel is None:
+            hidden_channel = in_channel
+        v_hidden_channel, s_hidden_channel = calc_n_vector_and_scalar_channels(hidden_channel, vector_dim, s_channel_frac=s_hidden_channel_frac, count_vector_channel_as_single_channel=count_vector_channel_as_single_channel)
+        self.layer_1 = HNLinearLeakyReLU(v_in_channel, v_hidden_channel, s_in_channels=s_in_channel, s_out_channels=s_hidden_channel, bn=False, apply_leaky_relu=True, **hybrid_feature_layer_settings)
+        self.layer_2 = HNLinearLeakyReLU(v_hidden_channel, v_out_channel, s_in_channels=s_hidden_channel, s_out_channels=s_out_channel, bn=False, apply_leaky_relu=False, **hybrid_feature_layer_settings)
+        self.layer_shortcut = HNLinearLeakyReLU(v_in_channel, v_out_channel, s_in_channels=s_in_channel, s_out_channels=s_out_channel, bn=False, apply_leaky_relu=False, **hybrid_feature_layer_settings)
+        # Pre-VNN code (from MLP_Res):
+        # self.layer_1 = nn.Conv1d(in_channel, hidden_channel, 1)
+        # self.layer_2 = nn.Conv1d(hidden_channel, out_channel, 1)
+        # self.layer_shortcut = nn.Conv1d(in_channel, out_channel, 1)
+
+    def forward(self, x):
+        """
+        Args:
+            x: (B, out_channel, n)
+        """
+        shortcut = self.layer_shortcut(x)
+        out = self.layer_2(self.layer_1(x)) + shortcut
+        # Pre-VNN code (from MLP_Res):
+        # out = self.layer_2(torch.relu(self.layer_1(x))) + shortcut
         return out
 
 

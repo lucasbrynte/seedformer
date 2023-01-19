@@ -76,7 +76,15 @@ def get_dflt_conf():
     __C.NETWORK.ATTN_CHANNEL                         = '2'
     __C.NETWORK.POS_FEATURES_FEAT_EXTRACTOR          = 'abs'
     __C.NETWORK.POS_FEATURES_UP_LAYERS               = 'abs'
-    __C.NETWORK.VNN                                  = None
+    # __C.NETWORK.VNN                                  = None
+    __C.NETWORK.VNN                                  = edict()
+    __C.NETWORK.VNN.ENABLED                          = True
+    # __C.NETWORK.VNN.ENABLED                          = False
+    __C.NETWORK.VNN.GROUP                            = 'SO2'
+    # __C.NETWORK.VNN.GROUP                            = 'SO3'
+    __C.NETWORK.VNN.VECTOR_DIM                       = {'SO2': 2, 'SO3': 3}[__C.NETWORK.VNN.GROUP]
+    __C.NETWORK.VNN.SCALAR_FEAT_FRAC                 = 0.5
+    __C.NETWORK.VNN.HYBRID_FEATURE_LAYER_SETTINGS    = edict(negative_slope=0.0, bias=True, scale_equivariance=False, s2v_norm_averaged_wrt_channels=True, s2v_norm_p=1)
 
 
     ####################################################################

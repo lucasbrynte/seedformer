@@ -250,6 +250,9 @@ if __name__ == '__main__':
     assert args.pos_features_up_layers in ['abs', 'rel', 'rel_nofeatmax', 'none', 'none_deeper']
     cfg.NETWORK.POS_FEATURES_UP_LAYERS = args.pos_features_up_layers
 
+    if cfg.NETWORK.VNN is not None:
+        assert cfg.NETWORK.VNN.GROUP in ['SO2', 'SO3']
+
     if not args.test and not args.inference:
         train_net(cfg)
     else:

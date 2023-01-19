@@ -199,6 +199,42 @@ class HNLinearLeakyReLU(nn.Module):
         return x_out, s_out
 
 
+def calc_n_vector_and_scalar_channels(
+    total_channels, # Total #channels (vector channels may count as single channels, or with multiplicity vector_dim, depending on whether count_vector_channel_as_single_channel=True)
+    vector_dim,
+    s_channel_frac = 0.5,
+    count_vector_channel_as_single_channel = False,
+):
+    if count_vector_channel_as_single_channel:
+        # Interpret total_channels as # "abstract" channels such that either scalar or vector channels each count as one.
+        v_channels = np.round((1. - s_channel_frac) * total_channels).astype(np.int64)
+
+        if v_channels > total_channels:
+            v_channels -= 1
+            assert v_channels >= 0
+        if v_channels  == 0 and s_channel_frac < 1.0:
+            v_channels += 1
+            assert not v_channels > total_channels
+
+        s_channels = total_channels - v_channels
+        assert total_channels == v_channels + s_channels
+    else:
+        # Interpret total_channels as # actual channels, such that each vector channel consumes "vector_dim" of these.
+        v_channels = np.round((1. - s_channel_frac) * total_channels / vector_dim).astype(np.int64) * vector_dim
+
+        if vector_dim * v_channels > total_channels:
+            v_channels -= 1
+            assert v_channels >= 0
+        if v_channels  == 0 and s_channel_frac < 1.0:
+            v_channels += 1
+            assert not vector_dim * v_channels > total_channels
+
+        s_channels = total_channels - vector_dim * v_channels
+        assert total_channels == vector_dim * v_channels + s_channels
+
+    return v_channels, s_channels
+
+
 class VNLinearAndLeakyReLU(nn.Module):
     def __init__(self, in_channels, out_channels, dim=5, share_nonlinearity=False, bn_mode='norm',
                  negative_slope=0.2):
